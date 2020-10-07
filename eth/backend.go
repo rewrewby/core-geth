@@ -131,7 +131,7 @@ func New(stack *node.Node, config *Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
-	chainConfig, genesisHash, genesisErr := core.SetupGenesisBlock(chainDb, config.Genesis)
+	chainConfig, genesisHash, genesisErr := core.SetupGenesisBlockWithOverride(chainDb, config.Genesis, config.ECBP1100)
 	if _, ok := genesisErr.(*confp.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
 	}
@@ -286,6 +286,7 @@ func CreateConsensusEngine(stack *node.Node, chainConfig ctypes.ChainConfigurato
 			DatasetsInMem:    config.DatasetsInMem,
 			DatasetsOnDisk:   config.DatasetsOnDisk,
 			DatasetsLockMmap: config.DatasetsLockMmap,
+			ECIP1099Block:    chainConfig.GetEthashECIP1099Transition(),
 		}, notify, noverify)
 		engine.SetThreads(-1) // Disable CPU mining
 		return engine
