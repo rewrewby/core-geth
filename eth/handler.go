@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -51,6 +52,9 @@ const (
 	// txChanSize is the size of channel listening to NewTxsEvent.
 	// The number is referenced from the size of tx pool.
 	txChanSize = 4096
+
+	// minimim number of peers to broadcast new blocks to
+	minBroadcastPeers = 4
 )
 
 var (
@@ -189,7 +193,12 @@ func NewProtocolManager(config ctypes.ChainConfigurator, checkpoint *ctypes.Trus
 		}
 		return n, err
 	}
-	manager.blockFetcher = fetcher.NewBlockFetcher(false, nil, blockchain.GetBlockByHash, validator, manager.BroadcastBlock, heighter, nil, inserter, manager.removePeer)
+	//manager.blockFetcher = fetcher.NewBlockFetcher(false, nil, blockchain.GetBlockByHash, validator, manager.BroadcastBlock, heighter, nil, inserter, manager.removePeer)
+
+	broadcastBlock := func(block *types.Block, propagate bool) {
+		manager.BroadcastBlock(block, propagate, false)
+	}
+	manager.blockFetcher = fetcher.NewBlockFetcher(false, nil, blockchain.GetBlockByHash, validator, broadcastBlock, heighter, nil, inserter, manager.removePeer)
 
 	fetchTx := func(peer string, hashes []common.Hash) error {
 		p := manager.peers.Peer(peer)
@@ -201,6 +210,8 @@ func NewProtocolManager(config ctypes.ChainConfigurator, checkpoint *ctypes.Trus
 	manager.txFetcher = fetcher.NewTxFetcher(txpool.Has, txpool.AddRemotes, fetchTx)
 
 	manager.chainSync = newChainSyncer(manager)
+
+	rand.Seed(time.Now().UnixNano())
 
 	return manager, nil
 }
@@ -823,7 +834,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 
 // BroadcastBlock will either propagate a block to a subset of its peers, or
 // will only announce its availability (depending what's requested).
-func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
+func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool, sealed bool) {
 	hash := block.Hash()
 	peers := pm.peers.PeersWithoutBlock(hash)
 
@@ -838,7 +849,28 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool) {
 			return
 		}
 		// Send the block to a subset of our peers
-		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
+		// transfer := peers[:int(math.Sqrt(float64(len(peers))))]
+
+		var transfer []*peer
+		if sealed {
+			transfer = peers
+		} else {
+			rand.Shuffle(len(peers), func(i, j int) {
+				peers[i], peers[j] = peers[j], peers[i]
+			})
+
+			// Send the block to a subset of our peers
+			transferLen := int(math.Sqrt(float64(len(peers))))
+			if transferLen < minBroadcastPeers {
+				transferLen = minBroadcastPeers
+			}
+			if transferLen > len(peers) {
+				transferLen = len(peers)
+			}
+			transfer = peers[:transferLen]
+		}
+
+
 		for _, peer := range transfer {
 			peer.AsyncSendNewBlock(block, td)
 		}
@@ -900,8 +932,8 @@ func (pm *ProtocolManager) minedBroadcastLoop() {
 
 	for obj := range pm.minedBlockSub.Chan() {
 		if ev, ok := obj.Data.(core.NewMinedBlockEvent); ok {
-			pm.BroadcastBlock(ev.Block, true)  // First propagate block to peers
-			pm.BroadcastBlock(ev.Block, false) // Only then announce to the rest
+			pm.BroadcastBlock(ev.Block, true, true)  // First propagate block to peers
+			pm.BroadcastBlock(ev.Block, false, true) // Only then announce to the rest
 		}
 	}
 }
