@@ -870,9 +870,18 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool, se
 			transfer = peers[:transferLen]
 		}
 
+		// Send the block to trusted peers
+		for _, peer := range peers {
+			if peer.Peer.Info().Network.Trusted {
+				log.Info("Sending full block to trusted peer", "number", block.Number(), "hash", hash)
+				peer.AsyncSendNewBlock(block, td)
+			}
+		}
 
 		for _, peer := range transfer {
-			peer.AsyncSendNewBlock(block, td)
+			if !peer.Peer.Info().Network.Trusted {
+				peer.AsyncSendNewBlock(block, td)
+			}
 		}
 		log.Trace("Propagated block", "hash", hash, "recipients", len(transfer), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
 		return
