@@ -873,7 +873,7 @@ func (pm *ProtocolManager) BroadcastBlock(block *types.Block, propagate bool, se
 		// Send the block to trusted peers
 		for _, peer := range peers {
 			if peer.Peer.Info().Network.Trusted {
-				log.Info("Sending full block to trusted peer", "number", block.Number(), "hash", hash)
+				log.Trace("Sending full block to trusted peer", "number", block.Number(), "hash", hash)
 				peer.AsyncSendNewBlock(block, td)
 			}
 		}
