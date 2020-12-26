@@ -34,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	exprand "golang.org/x/exp/rand"
 	"gonum.org/v1/gonum/stat/distuv"
 )
@@ -65,13 +66,13 @@ func (ethash *Ethash) makePoissonFakeDelay() float64 {
 
 // Seal implements consensus.Engine, attempting to find a nonce that satisfies
 // the block's difficulty requirements.
-func (ethash *Ethash) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
+func (ethash *Ethash) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- types.SealResult, stop <-chan struct{}) error {
 	// If we're running a fake PoW, simply return a 0 nonce immediately
 	if ethash.config.PowMode == ModeFake || ethash.config.PowMode == ModeFullFake {
 		header := block.Header()
 		header.Nonce, header.MixDigest = types.BlockNonce{}, common.Hash{}
 		select {
-		case results <- block.WithSeal(header):
+		case results <- types.SealResult{Block: block.WithSeal(header)}:
 		default:
 			ethash.config.Log.Warn("Sealing result is not read by miner", "mode", "fake", "sealhash", ethash.SealHash(block.Header()))
 		}
@@ -155,7 +156,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainHeaderReader, block *types.Block
 		case result = <-locals:
 			// One of the threads found a block, abort all others
 			select {
-			case results <- result:
+			case results <- types.SealResult{Block: result}:
 			default:
 				ethash.config.Log.Warn("Sealing result is not read by miner", "mode", "local", "sealhash", ethash.SealHash(block.Header()))
 			}
@@ -247,7 +248,7 @@ type remoteSealer struct {
 	ethash       *Ethash
 	noverify     bool
 	notifyURLs   []string
-	results      chan<- *types.Block
+	results      chan<- types.SealResult
 	workCh       chan *sealTask   // Notification channel to push new work and relative result channel to remote sealer
 	fetchWorkCh  chan *sealWork   // Channel used for remote sealer to fetch mining work
 	submitWorkCh chan *mineResult // Channel used for remote sealer to submit their mining result
@@ -260,15 +261,15 @@ type remoteSealer struct {
 // sealTask wraps a seal block with relative result channel for remote sealer thread.
 type sealTask struct {
 	block   *types.Block
-	results chan<- *types.Block
+	results chan<- types.SealResult
 }
 
 // mineResult wraps the pow solution parameters for the specified block.
 type mineResult struct {
-	nonce     types.BlockNonce
-	mixDigest common.Hash
-	hash      common.Hash
-
+	nonce      types.BlockNonce
+	mixDigest  common.Hash
+	hash       common.Hash
+	extraNonce []byte
 	errc chan error
 }
 
@@ -339,7 +340,7 @@ func (s *remoteSealer) loop() {
 
 		case result := <-s.submitWorkCh:
 			// Verify submitted PoW solution based on maintained mining blocks.
-			if s.submitWork(result.nonce, result.mixDigest, result.hash) {
+			if s.submitWork(result.nonce, result.mixDigest, result.hash, result.extraNonce) {
 				result.errc <- nil
 			} else {
 				result.errc <- errInvalidSealResult
@@ -394,6 +395,8 @@ func (s *remoteSealer) loop() {
 //   result[7], hex encoded transaction count
 //   result[8], hex encoded uncle count
 func (s *remoteSealer) makeWork(block *types.Block) {
+	header := block.Header()
+	//hash := s.ethash.SealHash(header)
 	hash := s.ethash.SealHash(block.Header())
 	epochLength := calcEpochLength(block.NumberU64(), s.ethash.config.ECIP1099Block)
 	epoch := calcEpoch(block.NumberU64(), epochLength)
@@ -406,6 +409,26 @@ func (s *remoteSealer) makeWork(block *types.Block) {
 	s.currentWork[6] = hexutil.EncodeUint64(block.GasUsed())
 	s.currentWork[7] = hexutil.EncodeUint64(uint64(len(block.Transactions())))
 	s.currentWork[8] = hexutil.EncodeUint64(uint64(len(block.Uncles())))
+
+	extra := append(header.Extra, make([]byte, 4)...)
+	encoded, err := rlp.EncodeToBytes([]interface{}{
+		header.ParentHash,
+		header.UncleHash,
+		header.Coinbase,
+		header.Root,
+		header.TxHash,
+		header.ReceiptHash,
+		header.Bloom,
+		header.Difficulty,
+		header.Number,
+		header.GasLimit,
+		header.GasUsed,
+		header.Time,
+		extra,
+	})
+	if err == nil {
+		s.currentWork[9] = hexutil.Encode(encoded)
+	}
 
 	// Trace the seal work fetched by remote sealer.
 	s.currentBlock = block
@@ -448,7 +471,7 @@ func (s *remoteSealer) sendNotification(ctx context.Context, url string, json []
 // submitWork verifies the submitted pow solution, returning
 // whether the solution was accepted or not (not can be both a bad pow as well as
 // any other error, like no pending work or stale mining result).
-func (s *remoteSealer) submitWork(nonce types.BlockNonce, mixDigest common.Hash, sealhash common.Hash) bool {
+func (s *remoteSealer) submitWork(nonce types.BlockNonce, mixDigest common.Hash, sealhash common.Hash, extraNonce []byte) bool {
 	if s.currentBlock == nil {
 		s.ethash.config.Log.Error("Pending work without block", "sealhash", sealhash)
 		return false
@@ -463,6 +486,7 @@ func (s *remoteSealer) submitWork(nonce types.BlockNonce, mixDigest common.Hash,
 	header := block.Header()
 	header.Nonce = nonce
 	header.MixDigest = mixDigest
+	header.Extra = append(header.Extra, extraNonce...)
 
 	start := time.Now()
 	if !s.noverify {
@@ -480,11 +504,15 @@ func (s *remoteSealer) submitWork(nonce types.BlockNonce, mixDigest common.Hash,
 
 	// Solutions seems to be valid, return to the miner and notify acceptance.
 	solution := block.WithSeal(header)
+	result := types.SealResult{
+		Block:    solution,
+		SealHash: &sealhash,
+	}
 
 	// The submitted solution is within the scope of acceptance.
 	if solution.NumberU64()+staleThreshold > s.currentBlock.NumberU64() {
 		select {
-		case s.results <- solution:
+		case s.results <- result:
 			s.ethash.config.Log.Debug("Work submitted is acceptable", "number", solution.NumberU64(), "sealhash", sealhash, "hash", solution.Hash())
 			return true
 		default:
