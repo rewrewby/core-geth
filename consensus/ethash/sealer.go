@@ -99,7 +99,7 @@ func (ethash *Ethash) Seal(chain consensus.ChainHeaderReader, block *types.Block
 			case <-timeout.C:
 				// Send the results when the timeout expires.
 				select {
-				case results <- block.WithSeal(header):
+				case results <- types.SealResult{Block: block.WithSeal(header)}:
 				default:
 					ethash.config.Log.Warn("Sealing result is not read by miner", "mode", "fake", "sealhash", ethash.SealHash(block.Header()))
 				}
