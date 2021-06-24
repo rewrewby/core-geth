@@ -17,6 +17,8 @@
 package node
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -24,14 +26,17 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -153,12 +158,201 @@ func TestRegisterProtocols(t *testing.T) {
 	}
 }
 
+// TestRegisterProtocols_OpenRPC tests whether a running stack adequately responds to rpc_discover.
+func TestRegisterProtocols_OpenRPC_HTTP(t *testing.T) {
+	stack, err := New(testNodeConfig())
+	if err != nil {
+		t.Fatalf("failed to create protocol stack: %v", err)
+	}
+	defer stack.Close()
+
+	datadir := filepath.Join(os.TempDir(), "node-test")
+	defer os.RemoveAll(datadir)
+
+	stack.config = &DefaultConfig
+	stack.config.HTTPHost = DefaultHTTPHost
+	stack.config.DataDir = datadir
+
+	if err := stack.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer stack.Close()
+
+	client, err := rpc.Dial("http://localhost:8545")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	res := make(map[string]interface{})
+	err = client.Call(&res, "rpc_discover")
+	if err != nil {
+		t.Errorf("client call: %v", err)
+	}
+
+	// b, _ := json.MarshalIndent(res, "", "    ")
+	// t.Log("response", string(b))
+
+	if res["info"].(map[string]interface{})["title"].(string) != "Core-Geth RPC API" {
+		t.Fatal("bad")
+	}
+}
+
+// TestRegisterProtocols_OpenRPC tests whether a running stack adequately responds to rpc_discover.
+func TestRegisterProtocols_OpenRPC_WS(t *testing.T) {
+	stack, err := New(testNodeConfig())
+	if err != nil {
+		t.Fatalf("failed to create protocol stack: %v", err)
+	}
+	defer stack.Close()
+
+	datadir := filepath.Join(os.TempDir(), "node-test")
+	defer os.RemoveAll(datadir)
+
+	stack.config = &DefaultConfig
+	stack.config.WSHost = DefaultWSHost
+	stack.config.WSPort = DefaultWSPort
+	stack.config.DataDir = datadir
+
+	if err := stack.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer stack.Close()
+
+	client, err := rpc.Dial("ws://localhost:8546")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	res := make(map[string]interface{})
+	ctx, cancelFn := context.WithTimeout(context.Background(), time.Second)
+	defer cancelFn()
+	err = client.CallContext(ctx, &res, "rpc_discover")
+	if err != nil {
+		t.Errorf("client call: %v", err)
+	}
+
+	// b, _ := json.MarshalIndent(res, "", "    ")
+	// t.Log("response", string(b))
+
+	if _, ok := res["info"]; !ok {
+		t.Fatal("no response")
+		return
+	}
+
+	if res["info"].(map[string]interface{})["title"].(string) != "Core-Geth RPC API" {
+		t.Fatal("bad")
+	}
+}
+
+// TestOpenRPCMetaSchemaSpec tests compliance of discovery endpoint with the OpenRPC spec stored locally
+func TestOpenRPCMetaSchemaSpec(t *testing.T) {
+	stack, err := New(testNodeConfig())
+	if err != nil {
+		t.Fatalf("failed to create protocol stack: %v", err)
+	}
+	defer stack.Close()
+
+	datadir := filepath.Join(os.TempDir(), "node-test")
+	defer os.RemoveAll(datadir)
+
+	stack.config = &DefaultConfig
+	stack.config.HTTPHost = DefaultHTTPHost
+	// enable all available APIs
+	stack.config.HTTPModules = []string{"admin", "debug", "eth", "ethash", "miner", "net", "personal", "rpc", "trace", "txpool", "web3"}
+	stack.config.DataDir = datadir
+
+	if err := stack.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer stack.Close()
+
+	client, err := rpc.Dial("http://localhost:8545")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+
+	res := make(map[string]interface{})
+	err = client.Call(&res, "rpc_discover")
+	if err != nil {
+		t.Errorf("client call: %v", err)
+	}
+
+	schemaLoader := gojsonschema.NewSchemaLoader()
+	schemaLoader.Draft = gojsonschema.Draft7 // force schema version
+	schemaLoader.AutoDetect = false
+
+	openRPCSpecFile := "file://./testdata/open-rpc-meta-schema-1.14.0.json"
+	schema, err := schemaLoader.Compile(gojsonschema.NewReferenceLoader(openRPCSpecFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	documentLoader := gojsonschema.NewGoLoader(res)
+
+	result, err := schema.Validate(documentLoader)
+	if err != nil {
+		t.Errorf("failed to validate OpenRPC schema: %v", err)
+	}
+
+	if !result.Valid() {
+		for _, desc := range result.Errors() {
+			fmt.Printf("- %s\n", desc)
+		}
+		t.Fatal("the OpenRPC discovery document is not compliant with spec")
+	}
+}
+
+// Suggested latest endpoint to be used is
+// COREGETH_OPENRPC_LATEST_SPEC_ENDPOINT=https://github.com/open-rpc/meta-schema/releases/latest/download/open-rpc-meta-schema.json
+var openRPCSpecLatestTestEnvVarName = "COREGETH_OPENRPC_LATEST_SPEC_ENDPOINT"
+
+// TestOpenRPCMetaSchemaSpecLatest compares local JSON spec file with the latest JSON spec published remotely,
+// so as we keep the local file in sync
+func TestOpenRPCMetaSchemaSpecLatest(t *testing.T) {
+	openRPCSpecLatestEndpoint := os.Getenv(openRPCSpecLatestTestEnvVarName)
+	if os.Getenv("CI") == "" || openRPCSpecLatestEndpoint == "" {
+		t.Skip()
+	}
+
+	client := &http.Client{}
+	resp, err := client.Get(openRPCSpecLatestEndpoint)
+	if err != nil {
+		t.Fatalf("failed to fetch latest spec JSON: %v", err)
+	}
+	defer resp.Body.Close()
+
+	dec := json.NewDecoder(resp.Body)
+
+	var latestSpec interface{}
+	if err := dec.Decode(&latestSpec); err != nil {
+		t.Fatalf("failed to decode latest spec JSON: %v", err)
+	}
+
+	localJSONFilePath := "./testdata/open-rpc-meta-schema-1.14.0.json"
+	localJSONFile, err := ioutil.ReadFile(localJSONFilePath)
+	if err != nil {
+		t.Fatalf("failed to load local spec JSON file: %v", err)
+	}
+
+	var localSpec interface{}
+	if err := json.Unmarshal(localJSONFile, &localSpec); err != nil {
+		t.Fatalf("failed to unmarshal local JSON spec: %v", err)
+	}
+
+	if !reflect.DeepEqual(latestSpec, localSpec) {
+		t.Fatalf("Local OpenRPC Schema (%v) is not updated to the latest one (%v)", localJSONFilePath, openRPCSpecLatestEndpoint)
+	}
+}
+
 // This test checks that open databases are closed with node.
 func TestNodeCloseClosesDB(t *testing.T) {
 	stack, _ := New(testNodeConfig())
 	defer stack.Close()
 
-	db, err := stack.OpenDatabase("mydb", 0, 0, "")
+	db, err := stack.OpenDatabase("mydb", 0, 0, "", false)
 	if err != nil {
 		t.Fatal("can't open DB:", err)
 	}
@@ -181,7 +375,7 @@ func TestNodeOpenDatabaseFromLifecycleStart(t *testing.T) {
 	var err error
 	stack.RegisterLifecycle(&InstrumentedService{
 		startHook: func() {
-			db, err = stack.OpenDatabase("mydb", 0, 0, "")
+			db, err = stack.OpenDatabase("mydb", 0, 0, "", false)
 			if err != nil {
 				t.Fatal("can't open DB:", err)
 			}
@@ -202,7 +396,7 @@ func TestNodeOpenDatabaseFromLifecycleStop(t *testing.T) {
 
 	stack.RegisterLifecycle(&InstrumentedService{
 		stopHook: func() {
-			db, err := stack.OpenDatabase("mydb", 0, 0, "")
+			db, err := stack.OpenDatabase("mydb", 0, 0, "", false)
 			if err != nil {
 				t.Fatal("can't open DB:", err)
 			}
@@ -390,7 +584,7 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 }
 
 // Tests whether a handler can be successfully mounted on the canonical HTTP server
-// on the given path
+// on the given prefix
 func TestRegisterHandler_Successful(t *testing.T) {
 	node := createNode(t, 7878, 7979)
 
@@ -483,7 +677,112 @@ func TestWebsocketHTTPOnSeparatePort_WSRequest(t *testing.T) {
 	if !checkRPC(node.HTTPEndpoint()) {
 		t.Fatalf("http request failed")
 	}
+}
 
+type rpcPrefixTest struct {
+	httpPrefix, wsPrefix string
+	// These lists paths on which JSON-RPC should be served / not served.
+	wantHTTP   []string
+	wantNoHTTP []string
+	wantWS     []string
+	wantNoWS   []string
+}
+
+func TestNodeRPCPrefix(t *testing.T) {
+	t.Parallel()
+
+	tests := []rpcPrefixTest{
+		// both off
+		{
+			httpPrefix: "", wsPrefix: "",
+			wantHTTP:   []string{"/", "/?p=1"},
+			wantNoHTTP: []string{"/test", "/test?p=1"},
+			wantWS:     []string{"/", "/?p=1"},
+			wantNoWS:   []string{"/test", "/test?p=1"},
+		},
+		// only http prefix
+		{
+			httpPrefix: "/testprefix", wsPrefix: "",
+			wantHTTP:   []string{"/testprefix", "/testprefix?p=1", "/testprefix/x", "/testprefix/x?p=1"},
+			wantNoHTTP: []string{"/", "/?p=1", "/test", "/test?p=1"},
+			wantWS:     []string{"/", "/?p=1"},
+			wantNoWS:   []string{"/testprefix", "/testprefix?p=1", "/test", "/test?p=1"},
+		},
+		// only ws prefix
+		{
+			httpPrefix: "", wsPrefix: "/testprefix",
+			wantHTTP:   []string{"/", "/?p=1"},
+			wantNoHTTP: []string{"/testprefix", "/testprefix?p=1", "/test", "/test?p=1"},
+			wantWS:     []string{"/testprefix", "/testprefix?p=1", "/testprefix/x", "/testprefix/x?p=1"},
+			wantNoWS:   []string{"/", "/?p=1", "/test", "/test?p=1"},
+		},
+		// both set
+		{
+			httpPrefix: "/testprefix", wsPrefix: "/testprefix",
+			wantHTTP:   []string{"/testprefix", "/testprefix?p=1", "/testprefix/x", "/testprefix/x?p=1"},
+			wantNoHTTP: []string{"/", "/?p=1", "/test", "/test?p=1"},
+			wantWS:     []string{"/testprefix", "/testprefix?p=1", "/testprefix/x", "/testprefix/x?p=1"},
+			wantNoWS:   []string{"/", "/?p=1", "/test", "/test?p=1"},
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		name := fmt.Sprintf("http=%s ws=%s", test.httpPrefix, test.wsPrefix)
+		t.Run(name, func(t *testing.T) {
+			cfg := &Config{
+				HTTPHost:       "127.0.0.1",
+				HTTPPathPrefix: test.httpPrefix,
+				WSHost:         "127.0.0.1",
+				WSPathPrefix:   test.wsPrefix,
+			}
+			node, err := New(cfg)
+			if err != nil {
+				t.Fatal("can't create node:", err)
+			}
+			defer node.Close()
+			if err := node.Start(); err != nil {
+				t.Fatal("can't start node:", err)
+			}
+			test.check(t, node)
+		})
+	}
+}
+
+func (test rpcPrefixTest) check(t *testing.T, node *Node) {
+	t.Helper()
+	httpBase := "http://" + node.http.listenAddr()
+	wsBase := "ws://" + node.http.listenAddr()
+
+	if node.WSEndpoint() != wsBase+test.wsPrefix {
+		t.Errorf("Error: node has wrong WSEndpoint %q", node.WSEndpoint())
+	}
+
+	for _, path := range test.wantHTTP {
+		resp := rpcRequest(t, httpBase+path)
+		if resp.StatusCode != 200 {
+			t.Errorf("Error: %s: bad status code %d, want 200", path, resp.StatusCode)
+		}
+	}
+	for _, path := range test.wantNoHTTP {
+		resp := rpcRequest(t, httpBase+path)
+		if resp.StatusCode != 404 {
+			t.Errorf("Error: %s: bad status code %d, want 404", path, resp.StatusCode)
+		}
+	}
+	for _, path := range test.wantWS {
+		err := wsRequest(t, wsBase+path, "")
+		if err != nil {
+			t.Errorf("Error: %s: WebSocket connection failed: %v", path, err)
+		}
+	}
+	for _, path := range test.wantNoWS {
+		err := wsRequest(t, wsBase+path, "")
+		if err == nil {
+			t.Errorf("Error: %s: WebSocket connection succeeded for path in wantNoWS", path)
+		}
+
+	}
 }
 
 func createNode(t *testing.T, httpPort, wsPort int) *Node {

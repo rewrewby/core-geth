@@ -22,10 +22,11 @@ import (
 	"math/big"
 	"math/rand"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
-	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core"
@@ -40,6 +41,10 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+var (
+	deadline = 5 * time.Minute
+)
+
 type testBackend struct {
 	mux             *event.TypeMux
 	db              ethdb.Database
@@ -49,6 +54,7 @@ type testBackend struct {
 	rmLogsFeed      event.Feed
 	pendingLogsFeed event.Feed
 	chainFeed       event.Feed
+	chainSideFeed   event.Feed
 }
 
 func (b *testBackend) ChainDb() ethdb.Database {
@@ -123,6 +129,10 @@ func (b *testBackend) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subsc
 	return b.chainFeed.Subscribe(ch)
 }
 
+func (b *testBackend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
+	return b.chainSideFeed.Subscribe(ch)
+}
+
 func (b *testBackend) BloomStatus() (uint64, uint64) {
 	return vars.BloomBitsBlocks, b.sections
 }
@@ -165,7 +175,7 @@ func TestBlockSubscription(t *testing.T) {
 	var (
 		db          = rawdb.NewMemoryDatabase()
 		backend     = &testBackend{db: db}
-		api         = NewPublicFilterAPI(backend, false)
+		api         = NewPublicFilterAPI(backend, false, deadline)
 		genesis     = core.MustCommitGenesis(db, new(genesisT.Genesis))
 		chain, _    = core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), db, 10, func(i int, gen *core.BlockGen) {})
 		chainEvents = []core.ChainEvent{}
@@ -210,6 +220,62 @@ func TestBlockSubscription(t *testing.T) {
 	<-sub1.Err()
 }
 
+// TestSideBlockSubscription tests if a block subscription returns block hashes for posted chain events.
+// It creates multiple subscriptions:
+// - one at the start and should receive all posted chain events and a second (blockHashes)
+// - one that is created after a cutoff moment and uninstalled after a second cutoff moment (blockHashes[cutoff1:cutoff2])
+// - one that is created after the second cutoff moment (blockHashes[cutoff2:])
+func TestSideBlockSubscription(t *testing.T) {
+	t.Parallel()
+
+	var (
+		db              = rawdb.NewMemoryDatabase()
+		backend         = &testBackend{db: db}
+		api             = NewPublicFilterAPI(backend, false, deadline)
+		genesis         = core.MustCommitGenesis(db, new(genesisT.Genesis))
+		chain, _        = core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), db, 10, func(i int, gen *core.BlockGen) {})
+		chainSideEvents = []core.ChainSideEvent{}
+	)
+
+	for _, blk := range chain {
+		chainSideEvents = append(chainSideEvents, core.ChainSideEvent{Block: blk})
+	}
+
+	chan0 := make(chan *types.Header)
+	sub0 := api.events.SubscribeNewSideHeads(chan0)
+	chan1 := make(chan *types.Header)
+	sub1 := api.events.SubscribeNewSideHeads(chan1)
+
+	go func() { // simulate client
+		i1, i2 := 0, 0
+		for i1 != len(chainSideEvents) || i2 != len(chainSideEvents) {
+			select {
+			case header := <-chan0:
+				if chainSideEvents[i1].Block.Hash() != header.Hash() {
+					t.Errorf("sub0 received invalid hash on index %d, want %x, got %x", i1, chainSideEvents[i1].Block.Hash(), header.Hash())
+				}
+				i1++
+			case header := <-chan1:
+				if chainSideEvents[i2].Block.Hash() != header.Hash() {
+					t.Errorf("sub1 received invalid hash on index %d, want %x, got %x", i2, chainSideEvents[i2].Block.Hash(), header.Hash())
+				}
+				i2++
+			}
+		}
+
+		sub0.Unsubscribe()
+		sub1.Unsubscribe()
+	}()
+
+	time.Sleep(1 * time.Second)
+	for _, e := range chainSideEvents {
+		backend.chainSideFeed.Send(e)
+	}
+
+	<-sub0.Err()
+	<-sub1.Err()
+}
+
 // TestPendingTxFilter tests whether pending tx filters retrieve all pending transactions that are posted to the event mux.
 func TestPendingTxFilter(t *testing.T) {
 	t.Parallel()
@@ -217,7 +283,7 @@ func TestPendingTxFilter(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false)
+		api     = NewPublicFilterAPI(backend, false, deadline)
 
 		transactions = []*types.Transaction{
 			types.NewTransaction(0, common.HexToAddress("0xb794f5ea0ba39494ce83a213fffba74279579268"), new(big.Int), 0, new(big.Int), nil),
@@ -272,7 +338,7 @@ func TestLogFilterCreation(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false)
+		api     = NewPublicFilterAPI(backend, false, deadline)
 
 		testCases = []struct {
 			crit    FilterCriteria
@@ -316,7 +382,7 @@ func TestInvalidLogFilterCreation(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false)
+		api     = NewPublicFilterAPI(backend, false, deadline)
 	)
 
 	// different situations where log filter creation should fail.
@@ -338,7 +404,7 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	var (
 		db        = rawdb.NewMemoryDatabase()
 		backend   = &testBackend{db: db}
-		api       = NewPublicFilterAPI(backend, false)
+		api       = NewPublicFilterAPI(backend, false, deadline)
 		blockHash = common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
 	)
 
@@ -363,7 +429,7 @@ func TestLogFilter(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false)
+		api     = NewPublicFilterAPI(backend, false, deadline)
 
 		firstAddr      = common.HexToAddress("0x1111111111111111111111111111111111111111")
 		secondAddr     = common.HexToAddress("0x2222222222222222222222222222222222222222")
@@ -477,7 +543,7 @@ func TestPendingLogsSubscription(t *testing.T) {
 	var (
 		db      = rawdb.NewMemoryDatabase()
 		backend = &testBackend{db: db}
-		api     = NewPublicFilterAPI(backend, false)
+		api     = NewPublicFilterAPI(backend, false, deadline)
 
 		firstAddr      = common.HexToAddress("0x1111111111111111111111111111111111111111")
 		secondAddr     = common.HexToAddress("0x2222222222222222222222222222222222222222")
@@ -600,6 +666,73 @@ func TestPendingLogsSubscription(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	for _, ev := range allLogs {
 		backend.pendingLogsFeed.Send(ev)
+	}
+}
+
+// TestPendingTxFilterDeadlock tests if the event loop hangs when pending
+// txes arrive at the same time that one of multiple filters is timing out.
+// Please refer to #22131 for more details.
+func TestPendingTxFilterDeadlock(t *testing.T) {
+	t.Parallel()
+	timeout := 100 * time.Millisecond
+
+	var (
+		db      = rawdb.NewMemoryDatabase()
+		backend = &testBackend{db: db}
+		api     = NewPublicFilterAPI(backend, false, timeout)
+		done    = make(chan struct{})
+	)
+
+	go func() {
+		// Bombard feed with txes until signal was received to stop
+		i := uint64(0)
+		for {
+			select {
+			case <-done:
+				return
+			default:
+			}
+
+			tx := types.NewTransaction(i, common.HexToAddress("0xb794f5ea0ba39494ce83a213fffba74279579268"), new(big.Int), 0, new(big.Int), nil)
+			backend.txFeed.Send(core.NewTxsEvent{Txs: []*types.Transaction{tx}})
+			i++
+		}
+	}()
+
+	// Create a bunch of filters that will
+	// timeout either in 100ms or 200ms
+	fids := make([]rpc.ID, 20)
+	for i := 0; i < len(fids); i++ {
+		fid := api.NewPendingTransactionFilter()
+		fids[i] = fid
+		// Wait for at least one tx to arrive in filter
+		for {
+			hashes, err := api.GetFilterChanges(fid)
+			if err != nil {
+				t.Fatalf("Filter should exist: %v\n", err)
+			}
+			if len(hashes.([]common.Hash)) > 0 {
+				break
+			}
+			runtime.Gosched()
+		}
+	}
+
+	// Wait until filters have timed out
+	time.Sleep(3 * timeout)
+
+	// If tx loop doesn't consume `done` after a second
+	// it's hanging.
+	select {
+	case done <- struct{}{}:
+		// Check that all filters have been uninstalled
+		for _, fid := range fids {
+			if _, err := api.GetFilterChanges(fid); err == nil {
+				t.Errorf("Filter %s should have been uninstalled\n", fid)
+			}
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Tx sending loop hangs")
 	}
 }
 
