@@ -242,7 +242,7 @@ func CreateConsensusEngine(stack *node.Node, ethashConfig *ethash.Config, clique
 	if cliqueConfig != nil {
 		engine = clique.New(cliqueConfig, db)
 	} else if lyra2Config != nil {
-		engine = lyra2.New(lyra2Config, notify, noverify)
+		//engine = lyra2.New(lyra2Config, notify, noverify)
 	} else {
 		switch ethashConfig.PowMode {
 		case ethash.ModeFake:
