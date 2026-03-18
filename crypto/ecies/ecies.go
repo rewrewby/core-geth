@@ -212,6 +212,10 @@ func symEncrypt(rand io.Reader, params *ECIESParams, key, m []byte) (ct []byte, 
 // symDecrypt carries out CTR decryption using the block cipher specified in
 // the parameters
 func symDecrypt(params *ECIESParams, key, ct []byte) (m []byte, err error) {
+	if len(ct) <= params.BlockSize {		
+		return nil, fmt.Errorf("ecies: ciphertext too short")
+	}
+	
 	c, err := params.Cipher(key)
 	if err != nil {
 		return
