@@ -10,6 +10,11 @@ env:
   #   https://github.com/ethereum/go-ethereum/blob/master/accounts/usbwallet/trezor/trezor.go#L21-L43
   GENERATE_EXCEPTIONS: |
     trezor
+# Least privilege. This workflow only reads the repository; the token needs
+# nothing else, and the repository default is `write`.
+permissions:
+  contents: read
+
 jobs:
   go-generate-check:
     name: Check if "go generate" has been run

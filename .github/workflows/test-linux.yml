@@ -11,6 +11,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Least privilege. This workflow only reads the repository; the token needs
+# nothing else, and the repository default is `write`.
+permissions:
+  contents: read
+
 jobs:
   # Run linter check. Only test code linters on latest version of Go.
   lint:
