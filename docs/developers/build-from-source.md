@@ -68,11 +68,16 @@ You can build a local docker image directly from the source:
 ```shell
 $ git clone https://github.com/ethereumclassic/core-geth.git
 $ cd core-geth
-$ docker build -t=core-geth .
+$ docker build -t core-geth:local .
 ```
 
 Or with all tools:
 
 ```shell
-$ docker build -t core-geth-alltools -f Dockerfile.alltools .
+$ docker build -t core-geth-alltools:local -f Dockerfile.alltools .
 ```
+
+`core-geth:local` is just the tag you are giving the image; name it whatever you
+like. The image's entry point is the `geth` binary, so flags go straight to the
+node — `docker run core-geth:local --classic`. Running a published image instead
+is covered under [Installation](../getting-started/installation.md#docker).

@@ -4,9 +4,16 @@ title: Command Line Interface (CLI)
 
 ## Running `geth`
 
-!!! tip "Use for Ethereum mainnet"
+!!! warning "Pass a network flag explicitly"
 
-    While `geth` is mainly used for the Ethereum Classic network, you can use it for Ethereum mainnet and other [supported networks](../index.md#networkprovider-comparison) as well.
+    A bare invocation selects `--mainnet`. `--mainnet`, `--sepolia` and `--holesky` are
+    inherited from upstream, are **not maintained here**, and are scheduled for removal:
+    this client implements Ethereum through Cancun and no further, so a node pointed at
+    one of them follows the real chain until the next fork it does not know about and
+    then continues on its own rules without reporting anything.
+
+    Pass `--classic` or `--mordor`. See
+    [supported networks](../index.md#supported-networks).
 
 ### Fast node on an Ethereum Classic network
 
