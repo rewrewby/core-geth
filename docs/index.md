@@ -4,46 +4,80 @@ hide:
 title: Core-Geth
 ---
 
-# Core-Geth: An Ethereum Protocol Provider
+# Core-Geth: the Ethereum Classic execution client
 
-[![OpenRPC](https://img.shields.io/static/v1.svg?label=OpenRPC&message=1.14.0&color=blue)](JSON-RPC-API/openrpc.md)
-[![Gitter](https://badges.gitter.im/core-geth/community.svg)](https://gitter.im/core-geth/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+> A [go-ethereum](https://github.com/ethereum/go-ethereum) downstream that keeps chain
+> configuration data-driven rather than hard-coded, so one binary serves Ethereum
+> Classic, Mordor and private chains.
 
-> An [ethereum/go-ethereum](https://github.com/ethereum/go-ethereum) downstream effort to make the Ethereum Protocol accessible and extensible for a diverse ecosystem.
+**Upstream go-ethereum has removed support for Ethereum Classic.** ETC consensus rules
+are maintained here rather than inherited, which is what this client is for.
 
-Priority is given to reducing opinions around chain configuration, IP-based feature implementations, and API predictability.
-Upstream development from [ethereum/go-ethereum](https://github.com/ethereum/go-ethereum) is merged to this repository regularly,
- usually at every upstream tagged release. Every effort is made to maintain seamless compatibility with upstream source, including compatible RPC, JS, and CLI
- APIs, data storage locations and schemas, and, of course, interoperable node protocols. Applicable bug reports, bug fixes, features, and proposals should be
- made upstream whenever possible.
+<div class="grid cards" markdown>
 
-## Network/provider comparison
+- **Running a node**
 
-Networks supported by the respective core-geth packaged `geth` program.
+    [Install](getting-started/installation.md) · [Command line](getting-started/run-cli.md)
 
-| Ticker | Consensus         | Network                               | core-geth                                                | ethereum/go-ethereum |
-| ---    | ---               | ---                                   | ---                                                      | ---                  |
-| ETC    | :zap:             | Ethereum Classic                      | :heavy_check_mark:                                       |                      |
-| ETH    | :zap:             | Ethereum (Foundation)                 | :heavy_check_mark:                                       | :heavy_check_mark:   |
-| -      | :zap: :handshake: | Private chains                        | :heavy_check_mark:                                       | :heavy_check_mark:   |
-|        | :zap:             | Mordor (Geth+Parity ETH PoW Testnet)  | :heavy_check_mark:                                       |                      |
-|        | :zap:             | Morden (Geth+Parity ETH PoW Testnet)  |                                                          |                      |
-|        | :zap:             | Ropsten (Geth+Parity ETH PoW Testnet) | :heavy_check_mark:                                       | :heavy_check_mark:   |
-|        | :handshake:       | Rinkeby (Geth-only ETH PoA Testnet)   | :heavy_check_mark:                                       | :heavy_check_mark:   |
-|        | :handshake:       | Kovan (Parity-only ETH PoA Testnet)   |                                                          |                      |
-|        |                   | Tobalaba (EWF Testnet)                |                                                          |                      |
-|        |                   | Ephemeral development PoA network     | :heavy_check_mark:                                       | :heavy_check_mark:   |
+- **Upgrading from v1.12.x**
 
-- :zap: = __Proof of Work__
-- :handshake: = __Proof of Authority__
+    [Migration guide](tutorials/v1.13.0-migration.md) — **read this before upgrading**
 
----
+- **Building it yourself**
 
-> <a name="ellaism-footnote">1</a>: This is originally an [Ellaism
-Project](https://github.com/ellaism). However, A [recent hard
-fork](https://github.com/ellaism/specs/blob/master/specs/2018-0003-wasm-hardfork.md)
-makes Ellaism not feasible to support with go-ethereum any more. Existing
-Ellaism users are asked to switch to
-[Parity](https://github.com/paritytech/parity).
+    [Build from source](developers/build-from-source.md)
 
-> <a name="configuration-capable">2</a>: Network not supported by default, but network configuration is possible. Make a PR!
+- **What was audited**
+
+    [Security and release audits](audits/2026-03-security-audit.md)
+
+</div>
+
+## Supported networks
+
+| Network | Chain ID | Consensus | Flag |
+| --- | --- | --- | --- |
+| Ethereum Classic | 61 | Proof of Work (Etchash) | `--classic` |
+| Mordor testnet | 63 | Proof of Work (Etchash) | `--mordor` |
+| MintMe.com Coin | 24734 | Proof of Work | `--mintme` |
+| Private chains | configurable | PoW / PoA | genesis configuration |
+
+Ethereum Classic runs every hard fork from Frontier through Spiral. The
+[README's consensus table](https://github.com/ethereumclassic/core-geth#etc-consensus-history)
+lists each upgrade with its activation block and the EIPs it included; `params/` in the
+source is the authority, and a fork schedule recalled from memory is a guess.
+
+### Networks this client registers but does not maintain
+
+**Ethereum mainnet, Sepolia and Holesky are inherited from upstream and are not
+maintained here** — and `--mainnet` is still what a bare invocation selects. This client
+implements Ethereum through Cancun and no further, so a node pointed at one of them
+follows the real chain until the next fork it does not know about, then continues on its
+own rules **without reporting anything**. They are scheduled for removal.
+
+Pass `--classic` or `--mordor` explicitly.
+
+**MintMe is carried deliberately.** `--mintme` works, and this release includes the
+MintMe hardfork enabling PUSH0 and MCOPY. It is scheduled for deprecation in a later
+release; it is here so that community has a modernized client to build from rather than
+a fork of an abandoned one.
+
+## How long this client is for
+
+**The v1.13 series is the last for Core-Geth.** It exists to close the security gap and
+carry Ethereum Classic on a supported Go toolchain while the client is retired — not to
+begin a new line of development. Plan on that horizon.
+
+On the wire this client speaks `eth/68`, and that is the version it will serve until it
+is retired. `eth/69` and later reach Ethereum Classic through [Fukuii](https://fukuii.org)
+and through the Ethereum Classic extensions maintained against mainstream Ethereum
+clients.
+
+## Where releases come from
+
+Releases are published from
+[`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth/releases).
+Archives published under the previous `etclabscore` namespace are not built from this
+source and do not carry the fixes released here — see the
+[release artifacts audit](audits/2026-09-release-pipeline.md) for what measurably
+differs between them.

@@ -5,7 +5,7 @@ hide:
 
 # Versioning
 
-etclabscore/core-geth uses [Semantic Versioning](https://semver.org). The API definition that would demand increments to the major version is basically nil;
+`ethereumclassic/core-geth` uses [Semantic Versioning](https://semver.org). The API definition that would demand increments to the major version is basically nil;
 it can be expected that a major version bump would be accompanied by an entirely new repository and name.
 
 Tagged versions use the suffix `-stable` and untagged versions (ie everything else) uses the `-unstable` suffix.

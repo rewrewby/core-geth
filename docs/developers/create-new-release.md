@@ -4,37 +4,86 @@ hide:
 title: Publishing a Release
 ---
 
-# Developers: How to Make a Release
+# Publishing a release
 
-- [ ] Decide what the new version should be. In this example, __`v1.11.16[-stable]`__ will be used.
-- [ ] `git checkout master`
-- [ ] `make lint` and `make test` are passing on master. :white_check_mark:
-  > This is important because the artifacts to be included with the release will be generated
-  by the CI workflows. If linting or tests fail, the workflows will be interrupted
-  and artifacts will not be generated.
-- [ ] `git checkout release/v1.11.16`
-- [ ] Edit `params/version.go` making the necessary changes to version information. (To `-stable` version.) _Gotcha:_ make sure this passes linting, too.
-- [ ] `git commit -S -s -m "bump version from v1.11.16-unstable to v1.11.16-stable"`
-- [ ] `git tag -S -a v1.11.16`
-- [ ] `git push etclabscore v1.11.16`
-  > Push the tag to the remote. I like to do it this way because it triggers the tagged version on CI before the branch/PR version,
-  expediting artifact delivery.
-- [ ] Edit `params/version.go` making the necessary changes to version information. (To `-unstable` version.)
-- [ ] `git commit -S -s -m "bump version from v1.11.16-stable to v1.11.17-unstable"`
-- [ ] `git push etclabscore`
-  > Push the branch. This will get PR'd, eg. https://github.com/etclabscore/core-geth/pull/197
-- [ ] Draft a new release, following the existing patterns for naming and notes. https://github.com/etclabscore/core-geth/releases/new
-    - Define the tag the release should be associated with (eg `v1.11.16`).
-    - Linux, OSX, and Windows artifacts will be uploaded automatically to this release draft by the CI jobs. There should be CI-generated 34 assets total.
+Releases are cut from **`main`** in
+[`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth). The
+`master` branch is gone and the previous `etclabscore` remote is not this project's
+to publish to.
 
-        !!! Note
+`v1.13.0-rc1` is used as the worked example below.
 
-            If the release is not drafted manually, it will be automatically drafted by the CI.
+## Before the tag
 
-- [ ] Await a complete set of uploaded artifacts. If artifacts fail to upload due to issue with the CI jobs, review
-  those jobs to determine if their failure(s) is OK, restarting them if so.
-- [ ] Once artifacts have been uploaded and the release draft reviewed by one other person for the following, it's time to publish!
-    + proofreading
-    + artifact fingerprint verification
-    + notes content approval
-- [ ] Once the release is published, merge the associated PR bumping versions.
+- [ ] **`main` is green.** `make lint`, `make test` and `make test-coregeth` all pass.
+      The release artifacts are produced by CI, so a red pipeline means no artifacts
+      rather than a bad release.
+- [ ] **Set the release stage.** Edit `params/version.go` so `VersionMeta` names the
+      stage being cut — `unstable` → `RC1`, `RC2`, … → `stable`. It must never be
+      empty: the archive and version helpers branch on `!= "stable"`, so an empty
+      value produces a malformed `1.13.0--<commit>` name rather than a clean one.
+      Check `gofmt` after editing; the constant block realigns.
+- [ ] **Commit and push it**, then let CI finish before tagging. The tag should point
+      at a commit CI has already judged.
+
+## Cut the tag
+
+```shell
+$ git tag -a v1.13.0-rc1 -m 'Core-Geth v1.13.0-rc1'
+$ git push origin v1.13.0-rc1
+```
+
+Creating a `v*` tag is restricted to repository admins by a ruleset, so this push
+reports a bypass. That restriction is what the build attestation rests on — an
+attestation binds an archive to the run that produced it, but only the tag rule
+decides who may start such a run.
+
+**A release tag is immutable.** Do not move or delete one after artifacts exist:
+the attestations are written to a public append-only log, so a reused tag name ends
+up bound to two different artifacts with no way to tell which is which. If a tag is
+wrong, cut the next one.
+
+## What the tag triggers
+
+| Workflow | Produces |
+| --- | --- |
+| `release-packages.yml` | 18 archives — 9 platforms × (`geth`, `alltools`) — each with a `.sha256`, plus a build attestation, uploaded to a **draft** release |
+| `docker-publish.yml` | multi-architecture images for `linux/amd64` and `linux/arm64`, pushed to GHCR |
+
+A tag whose name contains a hyphen is treated as a prerelease: the GitHub release is
+marked as one, and the container image does **not** take `:latest`. Only a full
+release such as `v1.13.0` takes the moving tag.
+
+## Before publishing the draft
+
+- [ ] **All 18 archives are attached**, and each `.sha256` matches its archive.
+- [ ] **The archive names carry the tag**, not a commit SHA. A bare SHA means the
+      tag was not present in the build checkout.
+- [ ] **The attestation verifies against a downloaded archive**, which is a
+      different claim from the workflow step having gone green:
+
+    ```shell
+    $ gh attestation verify core-geth-linux-v1.13.0-rc1.zip --repo ethereumclassic/core-geth
+    ```
+
+- [ ] **Spot-check a binary.** It should report the version you set, and its glibc
+      floor should be the one the build targets rather than the runner's:
+
+    ```shell
+    $ ./geth version
+    $ objdump -T geth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+    ```
+
+- [ ] **A second person has reviewed** the notes, the artifact list and the
+      fingerprints.
+- [ ] **For a full release, create the archive branch** — the migration guide points
+      readers at `archive-release-<version>`, and that link 404s until the branch
+      exists.
+
+## After publishing
+
+- [ ] Set `VersionMeta` to the next stage and push that commit.
+- [ ] For a first-ever image push, confirm the GHCR package visibility. A registry
+      creates new packages private by default, so nothing is pullable until it is
+      made public — and making it public is the moment every tag it carries starts
+      serving real traffic. Check what `:latest` points at before flipping it.

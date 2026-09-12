@@ -16,7 +16,7 @@ particular use-case the user doesn't care about years-old historical data, so we
 fast-sync quickly to the current state of the network. To do so:
 
 ```
-$ geth [|--classic|--testnet|--rinkeby|--mordor] console
+$ geth [--classic|--mordor] console
 ```
 
 This command will:

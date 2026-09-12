@@ -48,6 +48,25 @@ $ ./geth --help
 
 On macOS use `shasum -a 256 -c` in place of `sha256sum -c`.
 
+### Verify where the archive came from
+
+**A checksum proves the download was not corrupted. It does not prove what built the
+file**, because whoever publishes the archive publishes the checksum beside it. From
+v1.13.0 each archive also carries a build attestation, which records the workflow,
+commit and ref that produced it:
+
+```shell
+$ gh attestation verify core-geth-linux-v1.13.0.zip --repo ethereumclassic/core-geth
+```
+
+That needs the [GitHub CLI](https://cli.github.com/). It succeeds only for an artifact
+built by this repository's release workflow — an archive from anywhere else fails, as
+does one whose bytes have changed. No signing key is involved: the attestation is minted
+against a short-lived certificate issued to the workflow run itself, so there is no key
+to steal or rotate.
+
+Worth doing once on any binary you are about to run on a node that holds value.
+
 ## With Docker
 
 Images are published to the GitHub Container Registry for each tagged release,
@@ -86,23 +105,29 @@ $ docker run -d \
     --name core-geth \
     -v $LOCAL_DATADIR:/root \
     -p 30303:30303 -p 30303:30303/udp \
-    -p 8545:8545 \
+    -p 127.0.0.1:8545:8545 \
     core-geth \
     --classic \
     --http --http.addr 0.0.0.0 --http.port 8545
 ```
 
 That maps the devp2p port over both TCP and UDP, keeps chain data in
-`$LOCAL_DATADIR` on the host so it survives the container, and exposes the
-JSON-RPC endpoint on port 8545.
+`$LOCAL_DATADIR` on the host so it survives the container, and reaches the
+JSON-RPC endpoint from the host and nowhere else.
 
-!!! warning "`--http.addr 0.0.0.0` exposes the RPC endpoint"
-    `geth` binds RPC to the loopback interface by default, which inside a
-    container means nothing outside it can connect. Setting `--http.addr 0.0.0.0`
-    is what makes the endpoint reachable from the host, and it will equally make
-    it reachable from anywhere else that can route to the container. Publish the
-    port only to where it is needed, and do not expose an RPC endpoint to the
-    public internet without putting access control in front of it.
+!!! warning "Both halves of that RPC line are deliberate"
+    `--http` alone binds the listener to `localhost` **inside the container**, while
+    Docker forwards a published port to the container's *external* interface — so
+    `-p 8545:8545` with the default address publishes a port that reaches nothing, and
+    the RPC appears dead with no error explaining why.
+
+    `--http.addr 0.0.0.0` binds every interface inside the container's own network
+    namespace, which is isolated. `-p 127.0.0.1:8545:8545` is what keeps it off the
+    host's public interfaces. **Publishing as `-p 8545:8545` instead exposes your RPC
+    on every interface of the host, which on a VPS is the open internet.**
+
+    If you do not need RPC from the host at all, drop both the `-p 127.0.0.1:8545:8545`
+    and the `--http*` flags.
 
 The image also exposes 8546 for the WebSocket endpoint, which needs
 `--ws --ws.addr 0.0.0.0` to be served.
