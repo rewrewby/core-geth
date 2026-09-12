@@ -22,6 +22,37 @@ Reports are acknowledged and triaged privately. Where a fix is warranted it is
 prepared under a GitHub security advisory and disclosed once a release carrying
 it is available. Reporters are credited unless they ask not to be.
 
+## Automated and AI-assisted review
+
+**Findings from automated or agent-assisted review go through the private channel
+above, the same as any other.** Not a public issue, and not a pull request whose
+diff describes the defect before a fix exists.
+
+The reason is unchanged by how a finding was produced. What matters is whether it
+is exploitable against nodes that are running now, and an automated review can
+surface something exploitable as readily as a manual one. Volume does not change
+the obligation: a report with fifty findings and one that is real is still a
+report that should arrive privately.
+
+Such reviews are welcome. This client carries a large inherited surface, and
+systematic review of it is worth more to the project than the noise it costs to
+triage.
+
+## Publication and credit
+
+**Once a finding is resolved and a release carrying the fix is available, the
+review may be published in [`docs/audits/`](docs/audits/)** — as the March 2026
+audit and its August follow-up already are.
+
+That serves two purposes. It gives operators the per-release detail they need to
+decide what they are exposed to, and it credits the work by name. Security review
+of an under-resourced client is largely unpaid, and the record of who did it
+should be public and durable rather than a line in a changelog.
+
+**Our thanks to the white hat community.** Several of the defects closed in this
+release series were found and reported by people with no obligation to look. Where
+a reporter wants credit they are named; where they prefer not to be, they are not.
+
 ## Scope
 
 This repository is Core-Geth, the Ethereum Classic execution client. Consensus
