@@ -153,7 +153,9 @@ node prefers, never whether a block is valid.
 Read activation blocks out of the file. Do not restate a fork schedule from
 memory, and do not infer one network's rules from another's.
 
-`params/version.go` is the single source of the version: `1.13.0-unstable`.
+`params/version.go` is the single source of the version. Read the constants
+there rather than repeating them here; `VersionMeta` advances `unstable` →
+`RC1`, `RC2`, … → `stable` as tags are cut.
 
 ## Dependency updates
 
