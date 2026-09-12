@@ -2,53 +2,181 @@
 title: Installation
 ---
 
-There are three ways to get `geth`: download a pre-built archive, build a
-Docker image from this source, or build the binary from source. Building from
-source is covered on its own page, [Build from Source](../developers/build-from-source.md).
+!!! danger "Security advisory — the v1.12.x line"
+    Core-Geth moved to
+    [`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth) in
+    December 2024. Archives and images under the previous `etclabscore` namespace are
+    not built from this source and do not carry the fixes released here.
 
-!!! warning "Install from this repository only"
-    Core-Geth moved to [`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth).
-    Archives and images published under the previous `etclabscore` namespace are
-    not built from this source and do not carry the fixes released here. Do not
-    install from them.
+    **Affected:** all `v1.12.x` releases. **Fixed:** `v1.13.0`.
 
-## Pre-built executable
+    | Identifier | Severity | What it allows |
+    | --- | --- | --- |
+    | [CVE-2026-22862](../audits/2026-03-security-audit.md#cve-2026-22862-ecies-elliptic-curve-integrated-encryption-scheme-decrypt-ciphertext-length-undercheck) | High | Any peer crashes the node during the RLPx handshake. **Exploited against Ethereum Classic bootnodes, 18 March 2026.** |
+    | [CVE-2026-26315](../audits/2026-03-security-audit.md#cve-2026-26315-ecies-generateshared-accepts-unvalidated-public-key) | High | Repeated handshakes leak bits of the node's own P2P key |
+    | [CVE-2026-26314](../audits/2026-03-security-audit.md#cve-2026-26314-secp256k1-isoncurve-field-boundary-bypass) | High | secp256k1 coordinate field boundary bypass |
+    | [CVE-2025-24883](../audits/2026-03-security-audit.md#cve-2025-24883-off-curve-public-key-in-unmarshalpubkey) | High | Off-curve public key accepted by `UnmarshalPubkey` |
+    | [CVE-2026-26313](../audits/2026-03-security-audit.md#cve-2026-26313-p2p-rlp-recursive-length-prefix-item-count-memory-exhaustion) | High | One crafted p2p message exhausts the node's memory |
+    | [CVE-2026-22868](../audits/2026-03-security-audit.md#cve-2026-22868-kzg-kate-zaverucha-goldberg-blob-proof-verification-dos) | Medium | KZG proof verification denial of service |
+    | [GraphQL query depth](../audits/2026-03-security-audit.md#graphql-query-depth-dos) | Medium | Unbounded GraphQL query nesting; no CVE identifier assigned |
 
-Binary archives are attached to each tagged release on this repository's
-[releases page](https://github.com/ethereumclassic/core-geth/releases). Download the
-archive for your platform, verify it against its checksum, unarchive it, and run
-the binary.
+    Every `v1.12.x` release is additionally built on Go 1.21, which reached end of
+    life in August 2024.
 
-Each release publishes two archives per platform:
+    Later releases in the line backport some of these; the
+    [March 2026 audit](../audits/2026-03-security-audit.md) records which, and the
+    [migration guide](../tutorials/v1.13.0-migration.md) covers the upgrade.
 
-| Archive | Contains |
+## Choose your route
+
+Pick the one row that matches your machine and follow only that section. You do not
+need the others.
+
+| Your machine | Route |
 | --- | --- |
-| `core-geth-<platform>-<tag>.zip` | the `geth` node binary alone |
-| `core-geth-alltools-<platform>-<tag>.zip` | `geth` plus the other tools built from this source |
+| Linux, x86_64 — most servers and desktops | [Linux, x86_64](#linux-x86_64) |
+| Linux, 64-bit ARM — Raspberry Pi on a 64-bit OS, AWS Graviton, Ampere | [Linux, ARM](#linux-arm) |
+| Linux, 32-bit ARM — older Raspberry Pi and embedded boards | [Linux, ARM](#linux-arm) |
+| macOS, Apple Silicon | [macOS](#macos) |
+| macOS, Intel | [macOS](#macos) |
+| Windows, x86_64 | [Windows](#windows) |
+| Anything, in a container | [Docker](#docker) |
+| Anything, compiled yourself | [Build from source](#build-from-source) |
 
-`<platform>` is one of:
+On Linux and macOS, `uname -sm` prints the operating system and machine architecture,
+which is what the rows above distinguish.
 
-| Platform | Machine |
-| --- | --- |
-| `linux` | Linux, x86_64 |
-| `osx` | macOS, Intel |
-| `osx-arm64` | macOS, Apple Silicon |
-| `win64` | Windows, x86_64 |
-| `arm64` | Linux, 64-bit ARM |
-| `arm5`, `arm6`, `arm7` | Linux, 32-bit ARM, by ARM architecture version |
-| `arm` | deprecated; identical to `arm5`. Use `arm5` |
+**The executable is named `geth`.** `core-geth` appears throughout as the project,
+the repository, the container image and the archive filenames — there is no
+executable by that name.
 
-Every archive is published alongside a `.sha256` file. Verify before you run:
+Every archive route ends with a `geth` on your `PATH`. Archives are attached to each
+tagged release on the
+[releases page](https://github.com/ethereumclassic/core-geth/releases), and every one
+of them is a `.zip` containing the binary at the top level, published alongside a
+`.sha256` file.
+
+## Linux, x86_64
 
 ```shell
-$ sha256sum -c core-geth-linux-v1.13.0.zip.sha256
-$ unzip core-geth-linux-v1.13.0.zip
-$ ./geth --help
+$ VERSION=v1.13.0
+$ BASE=https://github.com/ethereumclassic/core-geth/releases/download/$VERSION
+$ curl -LO $BASE/core-geth-linux-$VERSION.zip
+$ curl -LO $BASE/core-geth-linux-$VERSION.zip.sha256
+$ sha256sum -c core-geth-linux-$VERSION.zip.sha256
+$ unzip core-geth-linux-$VERSION.zip
+$ sudo install -m 0755 geth /usr/local/bin/geth
+$ geth version
 ```
 
-On macOS use `shasum -a 256 -c` in place of `sha256sum -c`.
+`sha256sum -c` must print `OK`. If it prints `FAILED`, stop: delete the file and
+download it again rather than running it.
 
-### Verify where the archive came from
+**This archive needs glibc 2.31 or newer** — Debian 11, Ubuntu 20.04, RHEL 9 and
+anything more recent. `ldd --version` prints what you have. On an older distribution
+the binary will not start; [build from source](#build-from-source) there instead.
+
+Before running it on a node that holds value, also
+[verify where the archive came from](#verify-where-the-archive-came-from).
+
+## Linux, ARM
+
+Four ARM archives are published. `uname -m` tells you which one you need:
+
+| `uname -m` prints | Download | Needs glibc |
+| --- | --- | --- |
+| `aarch64` or `arm64` | `core-geth-arm64-<tag>.zip` | 2.17 or newer |
+| `armv7l` | `core-geth-arm7-<tag>.zip` | 2.28 or newer |
+| `armv6l` | `core-geth-arm6-<tag>.zip` | 2.28 or newer |
+| `armv5tel` and other `armv5` | `core-geth-arm5-<tag>.zip` | 2.28 or newer |
+
+**A 64-bit capable board does not mean a 64-bit archive.** Raspberry Pi OS reports
+`aarch64` in its 64-bit edition and `armv7l` in its 32-bit edition on the same
+hardware. Follow what `uname -m` actually prints.
+
+Then, substituting your architecture for `arm64` below:
+
+```shell
+$ VERSION=v1.13.0
+$ ARCH=arm64
+$ BASE=https://github.com/ethereumclassic/core-geth/releases/download/$VERSION
+$ curl -LO $BASE/core-geth-$ARCH-$VERSION.zip
+$ curl -LO $BASE/core-geth-$ARCH-$VERSION.zip.sha256
+$ sha256sum -c core-geth-$ARCH-$VERSION.zip.sha256
+$ unzip core-geth-$ARCH-$VERSION.zip
+$ sudo install -m 0755 geth /usr/local/bin/geth
+$ geth version
+```
+
+A `core-geth-arm-<tag>.zip` is published as well. It is byte-identical to the `arm5`
+archive and exists only so that existing scripts referring to it keep working — use
+`arm5`.
+
+Before running it on a node that holds value, also
+[verify where the archive came from](#verify-where-the-archive-came-from).
+
+## macOS
+
+Two archives, chosen by processor:
+
+| `uname -m` prints | Download |
+| --- | --- |
+| `arm64` — Apple Silicon, M1 and later | `core-geth-osx-arm64-<tag>.zip` |
+| `x86_64` — Intel | `core-geth-osx-<tag>.zip` |
+
+macOS has no `sha256sum`; use `shasum -a 256 -c`, which reads the same file.
+
+```shell
+$ VERSION=v1.13.0
+$ PLATFORM=osx-arm64            # or: osx
+$ BASE=https://github.com/ethereumclassic/core-geth/releases/download/$VERSION
+$ curl -LO $BASE/core-geth-$PLATFORM-$VERSION.zip
+$ curl -LO $BASE/core-geth-$PLATFORM-$VERSION.zip.sha256
+$ shasum -a 256 -c core-geth-$PLATFORM-$VERSION.zip.sha256
+$ unzip core-geth-$PLATFORM-$VERSION.zip
+$ sudo install -m 0755 geth /usr/local/bin/geth
+$ geth version
+```
+
+!!! tip "If macOS refuses to run it"
+    These binaries are not code-signed, so Gatekeeper blocks one that carries the
+    quarantine attribute with *"cannot be opened because the developer cannot be
+    verified"*. Browsers set that attribute; `curl` does not, so the commands above
+    avoid it. If you downloaded through a browser, clear it:
+
+    ```shell
+    $ xattr -d com.apple.quarantine geth
+    ```
+
+Before running it on a node that holds value, also
+[verify where the archive came from](#verify-where-the-archive-came-from).
+
+## Windows
+
+Download `core-geth-win64-<tag>.zip` and its `.sha256`. In PowerShell:
+
+```powershell
+> $VERSION = "v1.13.0"
+> $BASE = "https://github.com/ethereumclassic/core-geth/releases/download/$VERSION"
+> Invoke-WebRequest "$BASE/core-geth-win64-$VERSION.zip" -OutFile "core-geth-win64-$VERSION.zip"
+> Invoke-WebRequest "$BASE/core-geth-win64-$VERSION.zip.sha256" -OutFile "core-geth-win64-$VERSION.zip.sha256"
+> (Get-FileHash "core-geth-win64-$VERSION.zip" -Algorithm SHA256).Hash
+> Get-Content "core-geth-win64-$VERSION.zip.sha256"
+> Expand-Archive "core-geth-win64-$VERSION.zip" -DestinationPath .
+> .\geth.exe version
+```
+
+**PowerShell has no equivalent of `sha256sum -c`, so compare the two lines yourself.**
+`Get-FileHash` prints uppercase hex and the `.sha256` file holds lowercase followed by
+the filename; the letters must match, the case does not.
+
+The archive contains `geth.exe` alone. Move it wherever you keep command-line tools
+and add that directory to `PATH` if you want to run it by name.
+
+Before running it on a node that holds value, also
+[verify where the archive came from](#verify-where-the-archive-came-from).
+
+## Verify where the archive came from
 
 **A checksum proves the download was not corrupted. It does not prove what built the
 file**, because whoever publishes the archive publishes the checksum beside it. From
@@ -67,7 +195,7 @@ to steal or rotate.
 
 Worth doing once on any binary you are about to run on a node that holds value.
 
-## With Docker
+## Docker
 
 Images are published to the GitHub Container Registry for each tagged release,
 built for `linux/amd64` and `linux/arm64`:
@@ -93,12 +221,12 @@ set:
 ```shell
 $ git clone https://github.com/ethereumclassic/core-geth.git
 $ cd core-geth
-$ docker build -t core-geth .
+$ docker build -t core-geth:local .
 ```
 
-Run it either way. The image's entry point is `geth`, so flags are passed
-directly — substitute the published image name for `geth` below to run the
-published one:
+Run it either way. The image's entry point is the `geth` binary, so flags are
+passed straight to the node. `--name` below labels the running container and is
+yours to choose:
 
 ```shell
 $ docker run -d \
@@ -106,10 +234,13 @@ $ docker run -d \
     -v $LOCAL_DATADIR:/root \
     -p 30303:30303 -p 30303:30303/udp \
     -p 127.0.0.1:8545:8545 \
-    core-geth \
+    ghcr.io/ethereumclassic/core-geth:latest \
     --classic \
     --http --http.addr 0.0.0.0 --http.port 8545
 ```
+
+If you built the image yourself, use your own tag — `core-geth:local`, above — in
+place of `ghcr.io/ethereumclassic/core-geth:latest`.
 
 That maps the devp2p port over both TCP and UDP, keeps chain data in
 `$LOCAL_DATADIR` on the host so it survives the container, and reaches the
@@ -131,3 +262,36 @@ JSON-RPC endpoint from the host and nowhere else.
 
 The image also exposes 8546 for the WebSocket endpoint, which needs
 `--ws --ws.addr 0.0.0.0` to be served.
+
+## Build from source
+
+Building needs **Go 1.26** and a C compiler. This is also the route for a platform no
+archive covers, or a distribution older than the glibc floors above.
+
+```shell
+$ git clone https://github.com/ethereumclassic/core-geth.git
+$ cd core-geth
+$ make geth
+$ ./build/bin/geth version
+```
+
+**Do not clone with `--recursive`.** The three submodules hold consensus test fixtures,
+they are several gigabytes, and `make geth` does not read them. They are needed only to
+run the test suites.
+
+`make all` builds every tool rather than the node alone.
+[Build from source](../developers/build-from-source.md) covers the full set of targets,
+cross-compilation, and building inside Docker.
+
+## What else is in a release
+
+Each platform publishes two archives:
+
+| Archive | Contains |
+| --- | --- |
+| `core-geth-<platform>-<tag>.zip` | the `geth` node binary alone |
+| `core-geth-alltools-<platform>-<tag>.zip` | `geth` plus the other tools built from this source |
+
+Every route above uses the first. Take the `alltools` archive if you also want
+`abigen`, `bootnode`, `clef`, `echainspec`, `evm` and `rlpdump`; it installs exactly
+the same way.
