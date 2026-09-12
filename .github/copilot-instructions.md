@@ -36,7 +36,7 @@ The branch layout is mid-transition. Read it as a sequence, not a steady state.
 
 ## Toolchain
 
-Three Go versions are declared in this tree and they do not agree. This is real
+Four Go versions are declared in this tree and they do not agree. This is real
 and load-bearing:
 
 | Where | Declares | Governs |
@@ -64,8 +64,12 @@ Every command below is defined in the `Makefile` or in `build/ci.go`. There is n
 task runner other than `make`, and no command exists that is not listed here or
 printed by `make help`.
 
+**Cost note:** `make all`, `make test` and every `test-coregeth*` target are
+long, CPU-bound Go builds over a large tree — `make test` alone carries a
+20-minute timeout. Run one at a time.
+
 ```bash
-make core-geth       # build cmd/core-geth into ./build/bin/core-geth
+make geth       # build cmd/geth into ./build/bin/geth
 make all             # build every executable
 make test            # make all, then build/ci.go test -timeout 20m
 make lint            # build/ci.go lint -> golangci-lint run --config .golangci.yml
@@ -102,17 +106,22 @@ plus both test suites), `evmc.yml`, `go-generate-check.yml`, `bench-*.yml`,
 
 Triggers are not uniform and the branch names are mid-transition. `test-linux.yml`
 fires on a push to `main`, every pull request, and dispatch. `docs-deploy.yml`
-fires on `master` or `main`, path-filtered. `evmc.yml` and the three `bench-*.yml`
-still fire on `master` only, so they stop silently when `master` retires. The
-release and image workflows fire on a `v*` tag. Verify against the file.
+fires on `master` or `main`, path-filtered. `evmc.yml` fires on both a push to
+`master` and a pull request targeting `master`; the three `bench-*.yml` fire on
+push to `master` only — all of those stop silently when `master` retires.
+`go-generate-check.yml` fires on every pull request, unqualified.
+`audit-bootnodes.yml` fires on a daily schedule and on pull requests targeting
+`main` that touch `params/bootnode*`. The release and image workflows fire on a
+`v*` tag. Verify against the file.
 
-`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` are historical CI
-definitions, not what runs today. Leave them alone.
+**`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` were removed
+from `main`** on 2026-08-30 and are absent here; they remain on `master` and
+the archive branch as dead CI configs, and they retire with `master`.
 
 ## Layout
 
 ```
-cmd/core-geth         the node binary; cmd/utils/flags.go defines the network flags
+cmd/geth         the node binary; cmd/utils/flags.go defines the network flags
 params/               chain configuration - the core of what makes this a fork
 params/config_classic.go   Ethereum Classic mainnet fork schedule
 params/types/         the configuration interfaces that make chain config data-driven
@@ -134,13 +143,17 @@ Spiral**, Spiral being the head configuration at block 19,250,000 —
 `EIP4399FBlock` and `EIP4895FBlock` are commented out with their reasons;
 Ethereum Classic is proof of work and does not adopt them. The same struct sets
 `ECIP1010PauseBlock`/`ECIP1010Length`, `ECIP1017FBlock`/`ECIP1017EraRounds`,
-`ECIP1099FBlock` (Etchash), and `ECBP1100FBlock` with `ECBP1100DeactivateFBlock`,
-which switches the MESS artificial-finality rule off at the Spiral block.
+`ECIP1099FBlock` (Etchash), and `ECBP1100FBlock`, which activates MESS.
+**`ECBP1100DeactivateFBlock` is unset for both Classic and Mordor as of
+v1.13.0 — MESS stays on permanently (a client decision), and
+`params/config_etc_test.go` asserts it.** ECBP-1100 is an Ethereum Classic Best
+Practice, not a consensus rule: it changes which of two competing chains this
+node prefers, never whether a block is valid.
 
 Read activation blocks out of the file. Do not restate a fork schedule from
 memory, and do not infer one network's rules from another's.
 
-`params/version.go` is the single source of the version: `1.12.21-unstable`.
+`params/version.go` is the single source of the version: `1.13.0-unstable`.
 
 ## Dependency updates
 
@@ -148,8 +161,10 @@ memory, and do not infer one network's rules from another's.
 (`open-pull-requests-limit: 0`), recorded 2026-09-01. Five ecosystems name
 something this repository holds: `gomod`, `pip`, `docker`, `github-actions` and
 `gitsubmodule`. Dependabot security updates are a repository setting with no key
-in that file, and a limit of zero does not withhold them. Do not turn the
-disabled config into an active one — its state is a decision.
+in that file, and a limit of zero does not withhold them — but coverage is
+per-ecosystem: `gomod`, `pip` and `github-actions` support it, `docker` and
+`gitsubmodule` do not at any setting. Do not turn the disabled config into an
+active one — its state is a decision.
 
 Every `uses:` reference is pinned to a full commit SHA, with the readable version
 in a trailing comment. Bumping one means resolving the new SHA, reading the diff
@@ -158,7 +173,8 @@ confirmation. The comment can drift from the SHA; trust the SHA.
 
 ## Facts that mislead if you do not know them
 
-- **`swarm/` is legacy**, retained but not the active networking stack.
+- **`swarm/` was removed from `main`** on 2026-08-30; it remains on `master`
+  and the archive branch.
 - **`sync-parity-chainspecs` is marked deprecated in the `Makefile` itself.**
 - **`AUTHORS` is generated, not written**, by `build/update-license.go` from
   `git shortlog` via `.mailmap`. Nothing runs it, so it is stale. Never hand-edit
@@ -167,10 +183,11 @@ confirmation. The comment can drift from the SHA; trust the SHA.
   template hardcoded to `The go-ethereum Authors`, and no file attributed to
   `The core-geth Authors` is in its skip list, so running it deletes that
   attribution.
-- **`SECURITY.md` is upstream's and points at the Ethereum Foundation** —
-  `bounty@ethereum.org`, the Foundation's PGP key, go-ethereum audit links. It is
-  not this project's policy; do not cite it as the reporting path.
-- **`core-geth version-check` queries go-ethereum's vulnerability feed** and prints
+- **`SECURITY.md` is this project's own policy and is the reporting path.** It
+  was upstream's until this release series, directing reports to the Ethereum
+  Foundation under the Foundation's PGP key; it now routes them to this
+  repository's private advisories. Cite it.
+- **`geth version-check` queries go-ethereum's vulnerability feed** and prints
   `No vulnerabilities found` when nothing matches. That feed does not track this
   client.
 

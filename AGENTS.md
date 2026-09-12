@@ -13,6 +13,18 @@ something.
 which blocks a node accepts is a chain split, not a failing build. Everything
 below about confirmation, verification and boundaries exists for that reason.
 
+**This repository does not send pull requests to a separate upstream — it IS
+the Ethereum Classic organization's own repository.** `origin` is
+`github.com/ethereumclassic/core-geth`, no `upstream` remote is configured, and
+`main` carries zero commits `origin/main` does not already have: this branch is
+fully pushed to the organization's own remote, not a fork's local staging area.
+Root wiring artifacts committed here land in this organization's own tree,
+never in a separate maintainer's review queue. (Three auxiliary local-only
+branches — `main-wired`, `pre-condense-backup`, `reference/modernize-go-1.26` —
+do carry commits `origin` does not have; none of them is what this file
+describes or what gets wired.) Recorded 2026-09-04 so a later session does not
+re-ask.
+
 ## Branching
 
 The branch layout is mid-transition. Read it as a sequence, not a steady state.
@@ -73,8 +85,15 @@ Every command below is defined in the `Makefile` or in `build/ci.go`. There is n
 task runner other than `make`, and no command exists that is not listed here or
 printed by `make help`.
 
+**Cost note, since a tool that reads this file will attempt to run what it
+lists:** `make all`, `make test` and every `test-coregeth*` target are long,
+CPU-bound Go builds over a large tree — `make test` alone carries a 20-minute
+timeout. Run one at a time. `CLAUDE.md` carries the fuller resource-discipline
+note for Claude Code specifically; that guidance does not reach a tool reading
+only this file.
+
 ```bash
-make core-geth       # build cmd/core-geth into ./build/bin/core-geth
+make geth       # build cmd/geth into ./build/bin/geth
 make all             # build every executable
 make test            # make all, then build/ci.go test -timeout 20m
 make lint            # build/ci.go lint -> golangci-lint run --config .golangci.yml
@@ -124,22 +143,26 @@ was tested:
 |---|---|
 | push to `main`, every pull request, dispatch | `test-linux.yml` — lint plus both suites |
 | push to `master` or `main`, path-filtered to the docs | `docs-deploy.yml` |
-| push to `master` only | `evmc.yml`, and the three `bench-*.yml` |
-| every pull request | `go-generate-check.yml`, `evmc.yml`, `audit-bootnodes.yml` |
+| push to `master`, and pull requests targeting `master` | `evmc.yml` |
+| push to `master` only | the three `bench-*.yml` |
+| every pull request, unqualified | `go-generate-check.yml` |
+| pull requests targeting `main` touching `params/bootnode*`, plus a daily schedule | `audit-bootnodes.yml` |
 | a `v*` tag | `release-packages.yml`, `docker-publish.yml` |
-| a daily schedule | `audit-bootnodes.yml` |
 
-**The `master`-only row is a trap once `master` retires.** Those four stop firing
-and nothing reports it — the EVMC state tests would simply stop running. Move
-them with the default branch, not after it.
+**The `master`-only rows are a trap once `master` retires.** `evmc.yml` (both its
+push and pull-request triggers) and the three `bench-*.yml` stop firing and
+nothing reports it — the EVMC state tests would simply stop running. Move them
+with the default branch, not after it.
 
-`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` are also present.
-They are historical CI definitions, not what runs today. Leave them alone.
+**`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` were removed from
+`main`** on 2026-08-30 (`55ca851c2`, `100a0c6c7`) and are absent here. They
+remain on `master` and the archive branch — dead CI configs from before this
+repository's migration, and they retire with `master`.
 
 ## Structure
 
 ```
-cmd/core-geth         the node binary; cmd/utils/flags.go defines the network flags
+cmd/geth         the node binary; cmd/utils/flags.go defines the network flags
 params/               chain configuration - the core of what makes this a fork
 params/config_classic.go   Ethereum Classic mainnet fork schedule
 params/types/         the configuration interfaces that make chain config data-driven
@@ -166,8 +189,12 @@ adopt them.
 Alongside the EIP schedule the same struct sets the ECIP fields:
 `ECIP1010PauseBlock`/`ECIP1010Length` (difficulty bomb defusal), `ECIP1017FBlock`/
 `ECIP1017EraRounds` (monetary policy), `ECIP1099FBlock` (Etchash), and
-`ECBP1100FBlock` with `ECBP1100DeactivateFBlock`, which switches the MESS
-artificial-finality rule off at the Spiral block. The Istanbul-equivalent set is
+`ECBP1100FBlock`, which activates MESS. **`ECBP1100DeactivateFBlock` is unset for
+both Classic and Mordor as of v1.13.0 — MESS stays on permanently, a client
+decision, and `params/config_etc_test.go` asserts it: a non-nil deactivation
+block is the regression the test catches.** ECBP-1100 is an Ethereum Classic
+Best Practice, not a consensus rule — it changes which of two competing chains
+this node prefers, never whether a block is valid. The Istanbul-equivalent set is
 labeled `// ECIP-1088` in a comment rather than carried as its own field.
 
 Reading an activation block out of this file is the only reliable way to know
@@ -176,7 +203,7 @@ one network's rules from another's.
 
 ## Version
 
-`params/version.go` is the single source: `1.12.21-unstable`, `VersionName`
+`params/version.go` is the single source: `1.13.0-unstable`, `VersionName`
 `CoreGeth`. Release tooling reads it; nothing else should hard-code a version
 string.
 
@@ -189,6 +216,11 @@ string.
   (`go.mod`, `go.sum`), `pip` (`requirements-mkdocs.txt`), `docker` (two
   Dockerfiles), `github-actions` (every workflow under `.github/workflows/`) and
   `gitsubmodule` (the submodules in `.gitmodules`).
+- **A key existing is not the same as the surface being covered.** `gomod`,
+  `pip` and `github-actions` support Dependabot security updates; `docker` and
+  `gitsubmodule` do not, at any setting. For those two, nothing here and no
+  repository toggle delivers a patch — their coverage, if any, is external to
+  Dependabot entirely.
 - **The limit is zero because nobody is triaging a standing pull-request queue.**
   A queue nobody reads reports itself as a control while operating as noise.
 - **Dependabot security updates are a repository setting with no key in that
@@ -220,7 +252,8 @@ comment can drift from the SHA without anything failing, so trust the SHA.
 
 ## Facts that mislead if you do not know them
 
-- **`swarm/` is legacy.** It is retained; it is not the active networking stack.
+- **`swarm/` was removed from `main`** on 2026-08-30 (`55ca851c2`); it no longer
+  exists in this tree. It remains on `master` and the archive branch.
 - **The `sync-parity-chainspecs` target is marked deprecated in the `Makefile`
   itself.** Parity configuration support is not maintained past the Istanbul fork.
 - **`AUTHORS` is generated, not written.** `build/update-license.go` produces it
@@ -232,12 +265,12 @@ comment can drift from the SHA without anything failing, so trust the SHA.
   template hardcoded to `The go-ethereum Authors`, and no file attributed to
   `The core-geth Authors` is in its skip list. Running it as it stands deletes
   that attribution. Do not run it without deciding first what it should assert.
-- **`SECURITY.md` is upstream's and points at the Ethereum Foundation** — reports
-  are directed to `bounty@ethereum.org` under the Foundation's PGP key, and the
-  audit links go to go-ethereum. It is not this project's policy. Do not follow it
-  and do not cite it as the reporting path.
-- **`core-geth version-check` queries go-ethereum's vulnerability feed**
-  (`cmd/core-geth/misccmd.go`) and prints `No vulnerabilities found` when nothing
+- **`SECURITY.md` is this project's own policy and is the reporting path.** It was
+  upstream's until this release series, directing reports to the Ethereum
+  Foundation under the Foundation's PGP key; it now routes them to this
+  repository's private advisories. Cite it.
+- **`geth version-check` queries go-ethereum's vulnerability feed**
+  (`cmd/geth/misccmd.go`) and prints `No vulnerabilities found` when nothing
   matches. That feed does not track this client, so a clean result from it says
   nothing about this client.
 

@@ -27,6 +27,7 @@ build/_vendor/pkg
 /build/cache/
 /build/bin/
 /build/static/
+/geth
 /geth*.zip
 /core-geth
 /core-geth*.zip
@@ -72,7 +73,9 @@ les/transactions.rlp
 # rotate it first -- removing a file does not un-disclose what was published.
 .env
 .env.*
-!.env.example
+# The example CLASS, not one filename: .env.local.example is a template and
+# must reach a clone. End-anchored, so .env.example.local stays ignored.
+!.env*.example
 *.pem
 *.key
 *.p12
@@ -85,7 +88,7 @@ service-account.json
 secrets/
 
 # Chain keys and wallets. A keystore in a repository is a spent key.
-keystore/
+/keystore/
 *.keystore
 wallet.json
 mnemonic.txt
