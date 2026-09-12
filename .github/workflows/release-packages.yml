@@ -242,4 +242,8 @@ jobs:
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           draft: true
+          # A hyphen in the tag is the semver marker for a prerelease. Without
+          # this a release candidate publishes looking like a finished release,
+          # which is what an operator scanning the releases page acts on.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: core-geth*.zip*

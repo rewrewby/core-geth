@@ -138,16 +138,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # `latest=auto` withholds the moving tag from a prerelease, so a tag such
-      # as v1.13.0-rc1 publishes under its own name without becoming what an
-      # untagged pull resolves to.
+      # `:latest` is what a bare `docker pull` resolves to, so only a full
+      # release may take it. A hyphen in the tag name is the semver marker for a
+      # prerelease, so v1.13.0-rc1 publishes under its own name and v1.13.0
+      # takes the moving tag.
+      #
+      # This was `latest=auto`, which does NOT withhold the tag from a
+      # prerelease: `auto` keys off `type=ref,event=tag` below, which has no
+      # notion of one. Measured on the v0.0.0-pipeline-test run, where a build
+      # named "pipeline-test" was published as `:latest`.
       - name: Derive the published tags
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           flavor: |
-            latest=auto
+            latest=${{ !contains(github.ref_name, '-') }}
             prefix=${{ matrix.variant.prefix }},onlatest=true
           # The trailing sha rule is always produced, including on a manual
           # run from a branch where none of the tag rules match. Without it a
