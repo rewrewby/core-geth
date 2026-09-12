@@ -64,7 +64,7 @@ var (
 	// Files that end up in the core-geth*.zip archive.
 	gethArchiveFiles = []string{
 		"COPYING",
-		executablePath("core-geth"),
+		executablePath("geth"),
 	}
 
 	// Files that end up in the core-geth-alltools*.zip archive.
@@ -74,7 +74,7 @@ var (
 		executablePath("bootnode"),
 		executablePath("echainspec"),
 		executablePath("evm"),
-		executablePath("core-geth"),
+		executablePath("geth"),
 		executablePath("rlpdump"),
 		executablePath("clef"),
 	}
@@ -98,7 +98,7 @@ var (
 			Description: "Developer utility version of the EVM (Ethereum Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode.",
 		},
 		{
-			BinaryName:  "core-geth",
+			BinaryName:  "geth",
 			Description: "Ethereum CLI client.",
 		},
 		{
@@ -1005,7 +1005,7 @@ func doWindowsInstaller(cmdline []string) {
 			continue
 		}
 		allTools = append(allTools, filepath.Base(file))
-		if filepath.Base(file) == "core-geth.exe" {
+		if filepath.Base(file) == "geth.exe" {
 			gethTool = file
 		} else {
 			devTools = append(devTools, file)

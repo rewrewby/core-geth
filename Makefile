@@ -2,25 +2,18 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: core-geth geth evm mkdocs-serve all test clean
+.PHONY: geth evm mkdocs-serve all test clean
 
 GOBIN = ./build/bin
 GO ?= latest
 GORUN = go run
 ROOT_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-#? core-geth: Build core-geth
-core-geth:
-	$(GORUN) build/ci.go install ./cmd/core-geth
+#? geth: Build geth
+geth:
+	$(GORUN) build/ci.go install ./cmd/geth
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/core-geth\" to launch core-geth."
-
-#? geth: Deprecated alias for core-geth
-geth: core-geth
-	@echo
-	@echo "NOTE: 'make geth' is a compatibility alias kept so an existing build"
-	@echo "      script does not break on the rename. It builds core-geth; there"
-	@echo "      is no binary named geth. Use 'make core-geth'."
+	@echo "Run \"$(GOBIN)/geth\" to launch geth."
 
 #? evm: Build evm
 evm:
@@ -80,7 +73,7 @@ test-coregeth-chainspecs-coregeth: ## Run tests specific to core-geth using core
 	@echo "Testing CoreGeth JSON chainspec equivalence."
 	env COREGETH_TESTS_CHAINCONFIG_COREGETH_SPECS=on go test -count=1 ./tests
 
-test-coregeth-regression-condensed: core-geth
+test-coregeth-regression-condensed: geth
 	@echo "Running condensed regression tests (imports) against simulated canonical blockchains."
 	./tests/regression/simulated/test.sh ./tests/regression/simulated/classic-condense-state/classic.conf.json ./tests/regression/simulated/classic-condense-state/export.rlp.gz
 	./tests/regression/simulated/test.sh ./tests/regression/simulated/foundation-condense-state/foundation.conf.json ./tests/regression/simulated/foundation-condense-state/export.rlp.gz

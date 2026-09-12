@@ -2,7 +2,7 @@
 title: Installation
 ---
 
-There are three ways to get `core-geth`: download a pre-built archive, build a
+There are three ways to get `geth`: download a pre-built archive, build a
 Docker image from this source, or build the binary from source. Building from
 source is covered on its own page, [Build from Source](../developers/build-from-source.md).
 
@@ -23,8 +23,8 @@ Each release publishes two archives per platform:
 
 | Archive | Contains |
 | --- | --- |
-| `core-geth-<platform>-<tag>.zip` | the `core-geth` node binary alone |
-| `core-geth-alltools-<platform>-<tag>.zip` | `core-geth` plus the other tools built from this source |
+| `core-geth-<platform>-<tag>.zip` | the `geth` node binary alone |
+| `core-geth-alltools-<platform>-<tag>.zip` | `geth` plus the other tools built from this source |
 
 `<platform>` is one of:
 
@@ -43,7 +43,7 @@ Every archive is published alongside a `.sha256` file. Verify before you run:
 ```shell
 $ sha256sum -c core-geth-linux-v1.13.0.zip.sha256
 $ unzip core-geth-linux-v1.13.0.zip
-$ ./core-geth --help
+$ ./geth --help
 ```
 
 On macOS use `shasum -a 256 -c` in place of `sha256sum -c`.
@@ -68,7 +68,7 @@ node alone, is published under the same name with an `alltools-` prefix, as
     this source and receive nothing released here.
 
 You can also build an image yourself — the `Dockerfile` produces an image
-containing `core-geth`, and `Dockerfile.alltools` one containing the full tool
+containing `geth`, and `Dockerfile.alltools` one containing the full tool
 set:
 
 ```shell
@@ -77,8 +77,8 @@ $ cd core-geth
 $ docker build -t core-geth .
 ```
 
-Run it either way. The image's entry point is `core-geth`, so flags are passed
-directly — substitute the published image name for `core-geth` below to run the
+Run it either way. The image's entry point is `geth`, so flags are passed
+directly — substitute the published image name for `geth` below to run the
 published one:
 
 ```shell
@@ -97,7 +97,7 @@ That maps the devp2p port over both TCP and UDP, keeps chain data in
 JSON-RPC endpoint on port 8545.
 
 !!! warning "`--http.addr 0.0.0.0` exposes the RPC endpoint"
-    `core-geth` binds RPC to the loopback interface by default, which inside a
+    `geth` binds RPC to the loopback interface by default, which inside a
     container means nothing outside it can connect. Setting `--http.addr 0.0.0.0`
     is what makes the endpoint reachable from the host, and it will equally make
     it reachable from anywhere else that can route to the container. Publish the

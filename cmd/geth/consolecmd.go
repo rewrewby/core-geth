@@ -155,6 +155,6 @@ func ephemeralConsole(ctx *cli.Context) error {
 		b.Write([]byte(fmt.Sprintf("loadScript('%s');", file)))
 	}
 	utils.Fatalf(`The "js" command is deprecated. Please use the following instead:
-core-geth --exec "%s" console`, b.String())
+geth --exec "%s" console`, b.String())
 	return nil
 }

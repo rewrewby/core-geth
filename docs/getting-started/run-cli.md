@@ -2,11 +2,11 @@
 title: Command Line Interface (CLI)
 ---
 
-## Running `core-geth`
+## Running `geth`
 
 !!! tip "Use for Ethereum mainnet"
 
-    While `core-geth` is mainly used for the Ethereum Classic network, you can use it for Ethereum mainnet and other [supported networks](../index.md#networkprovider-comparison) as well.
+    While `geth` is mainly used for the Ethereum Classic network, you can use it for Ethereum mainnet and other [supported networks](../index.md#networkprovider-comparison) as well.
 
 ### Fast node on an Ethereum Classic network
 
@@ -16,19 +16,19 @@ particular use-case the user doesn't care about years-old historical data, so we
 fast-sync quickly to the current state of the network. To do so:
 
 ```
-$ core-geth [|--classic|--testnet|--rinkeby|--mordor] console
+$ geth [|--classic|--testnet|--rinkeby|--mordor] console
 ```
 
 This command will:
 
- * Start `core-geth` in fast sync mode (default, can be changed with the `--syncmode` flag),
+ * Start `geth` in fast sync mode (default, can be changed with the `--syncmode` flag),
    causing it to download more data in exchange for avoiding processing the entire history
    of the Ethereum network, which is very CPU intensive.
- * Start up `core-geth`'s built-in interactive [JavaScript console](https://geth.ethereum.org/docs/interface/javascript-console),
+ * Start up `geth`'s built-in interactive [JavaScript console](https://geth.ethereum.org/docs/interface/javascript-console),
    (via the trailing `console` subcommand) through which you can invoke all official [`web3` methods](https://web3js.readthedocs.io/en/v1.2.9/)
-   as well as `core-geth`'s own [management APIs](https://geth.ethereum.org/docs/rpc/server).
+   as well as `geth`'s own [management APIs](https://geth.ethereum.org/docs/rpc/server).
    This tool is optional and if you leave it out you can always attach to an already running
-   `core-geth` instance with `core-geth attach`.
+   `geth` instance with `geth attach`.
 
 ### A Full node on the Mordor test network
 
@@ -39,20 +39,20 @@ network, you want to join the **mordor test** network with your node, which is f
 the main network, but with play-Ether only.
 
 ```shell
-$ core-geth --mordor console
+$ geth --mordor console
 ```
 
 The `console` subcommand has the exact same meaning as above and they are equally
 useful on the testnet too. Please see above for their explanations if you've skipped here.
 
-Specifying the `--mordor` flag, however, will reconfigure your `core-geth` instance a bit:
+Specifying the `--mordor` flag, however, will reconfigure your `geth` instance a bit:
 
- * Instead of using the default data directory (`~/.ethereum` on Linux for example), `core-geth`
+ * Instead of using the default data directory (`~/.ethereum` on Linux for example), `geth`
    will nest itself one level deeper into a `mordor` subfolder (`~/.ethereum/mordor` on
    Linux). Note, on OSX and Linux this also means that attaching to a running testnet node
-   requires the use of a custom endpoint since `core-geth attach` will try to attach to a
+   requires the use of a custom endpoint since `geth attach` will try to attach to a
    production node endpoint by default. E.g.
-   `core-geth attach <datadir>/mordor/geth.ipc`. Windows users are not affected by
+   `geth attach <datadir>/mordor/geth.ipc`. Windows users are not affected by
    this.
  * Instead of connecting the main Ethereum network, the client will connect to the mordor's test
    network, which uses different P2P bootnodes, different network IDs and genesis states.
@@ -62,23 +62,23 @@ Specifying the `--mordor` flag, however, will reconfigure your `core-geth` insta
     Although there are some internal protective measures to prevent transactions from
     crossing over between the classic network and test network, you should make sure to always
     use separate accounts for play-money and real-money. Unless you manually move
-    accounts, `core-geth` will by default correctly separate the two networks and will not make any
+    accounts, `geth` will by default correctly separate the two networks and will not make any
     accounts available between them.*
 
 ### Configuration
 
-As an alternative to passing the numerous flags to the `core-geth` binary, you can also pass a
+As an alternative to passing the numerous flags to the `geth` binary, you can also pass a
 configuration file via:
 
 ```shell
-$ core-geth --config /path/to/your_config.toml
+$ geth --config /path/to/your_config.toml
 ```
 
 To get an idea how the file should look like you can use the `dumpconfig` subcommand to
 export your existing configuration:
 
 ```shell
-$ core-geth --your-favourite-flags dumpconfig
+$ geth --your-favourite-flags dumpconfig
 ```
 
 !!! Note
@@ -87,16 +87,16 @@ $ core-geth --your-favourite-flags dumpconfig
 
 ## Command-line Options
 
-Generated from `core-geth --help`. The binary is authoritative; regenerate this
-section rather than editing it, and prefer `core-geth --help` when the two differ.
+Generated from `geth --help`. The binary is authoritative; regenerate this
+section rather than editing it, and prefer `geth --help` when the two differ.
 
 ```
-$ core-geth --help
+$ geth --help
 NAME:
-   core-geth - the Core-Geth command line interface
+   geth - the Core-Geth command line interface
 
 USAGE:
-   core-geth [global options] command [command options]
+   geth [global options] command [command options]
 
 VERSION:
    1.13.0-unstable-e94c1a60-20260902

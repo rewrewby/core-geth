@@ -43,11 +43,11 @@ Once the dependencies have been installed, clone and build:
 ```shell
 $ git clone https://github.com/ethereumclassic/core-geth.git
 $ cd core-geth
-$ make core-geth
-$ ./build/bin/core-geth --help
+$ make geth
+$ ./build/bin/geth --help
 ```
 
-`make core-geth` builds the node alone. `make all` builds every executable in
+`make geth` builds the node alone. `make all` builds every executable in
 `cmd/`, which is what the `alltools` release archives contain. Run `make help`
 to list the available targets.
 
