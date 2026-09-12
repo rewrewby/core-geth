@@ -204,6 +204,41 @@ concept of one. Measured during a pipeline rehearsal, where a build named
 `pipeline-test` was published as `:latest`. A defect of this shape is invisible in
 a green pipeline and visible only in what an untagged pull returns.
 
+## What a vulnerability scanner will say about these artifacts
+
+**A scanner run against a `v1.13.0` binary reports several go-ethereum advisories
+that are already fixed in it.** This is expected, and it is worth understanding
+before it is read as a finding.
+
+The Go module path is deliberately `github.com/ethereum/go-ethereum` — that is what
+makes this a drop-in downstream, and changing it would break every consumer. A
+binary scanner reads the module version out of the build and resolves it to a
+go-ethereum pseudo-version, which sorts *below* every upstream tag that fixed
+anything. So each upstream advisory fixed above that point matches, regardless of
+whether the fix is present in this source.
+
+**Tagging sharpens the match rather than resolving it.** A clean `v1.13.0` sorts
+below the upstream tags that carry those fixes, so the report does not improve with
+the release.
+
+Two consequences worth holding:
+
+- **An exit status of 0 from such a scan is a change, not a pass.** Findings are
+  expected here. An advisory *disappearing* is as much a signal as one appearing —
+  it means either the adjudication has gone stale or the artifact scanned is not
+  the one that was adjudicated.
+- **Each match is confirmed by reading the guard in this tree**, not by comparing
+  version strings. `2026-08-dependency-modernization.md` records the adjudicated
+  set and the reasoning.
+
+**The client's own `version-check` command is a separate matter and used to be
+wrong in the other direction.** It queries go-ethereum's feed, whose patterns begin
+`Geth/` without a leading anchor — and this client identifies as `Core-Geth/`,
+which contains `Geth`. An operator running the built-in checker on a fresh release
+was told, falsely, that it carried a High-severity advisory. Fixed by requiring the
+match to begin at the start of the version string; a genuine go-ethereum version
+still matches, and this client no longer matches itself.
+
 ## How v1.13.0 sets its platform floor
 
 Pinning to a specific build image is an improvement and not a solution: the floor is
