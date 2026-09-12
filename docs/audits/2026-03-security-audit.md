@@ -1,14 +1,18 @@
 # Core-Geth Security Audit — March 2026
 
-**Client:** Core-Geth (Ethereum Classic)  
-**Audit Date:** March 2026  
-**Repository audited:** [github.com/etclabscore/core-geth](https://github.com/etclabscore/core-geth)  
-**Last substantive release there:** v1.12.20 (10 June 2024)  
-**Emergency patches there:** [v1.12.21](https://github.com/etclabscore/core-geth/releases/tag/v1.12.21) (18 March 2026) · [v1.12.22](https://github.com/etclabscore/core-geth/releases/tag/v1.12.22) (28 March 2026) — CVE-only backports; Go 1.21 EOL toolchain unchanged  
-**Patched repository:** [github.com/ethereumclassic/core-geth](https://github.com/ethereumclassic/core-geth)  
-**Patched release:** v1.13.0  
-**Patched by:** The core-geth Authors  
-**Auditors:** Ethereum Classic Core Developers
+- **Client:** Core-Geth (Ethereum Classic)
+- **Audit Date:** March 2026
+- **Repository audited:** [github.com/etclabscore/core-geth](https://github.com/etclabscore/core-geth)
+- **Last substantive release there:** v1.12.20 (10 June 2024)
+- **Emergency patches there:** [v1.12.21](https://github.com/etclabscore/core-geth/releases/tag/v1.12.21) (18 March 2026) · [v1.12.22](https://github.com/etclabscore/core-geth/releases/tag/v1.12.22) (28 March 2026) — CVE-only backports; Go 1.21 EOL toolchain unchanged
+- **Patched repository:** [github.com/ethereumclassic/core-geth](https://github.com/ethereumclassic/core-geth)
+- **Patched release:** v1.13.0
+- **Patched by:** The core-geth Authors
+- **Auditors:** Ethereum Classic Core Developers
+
+**On this page:** [What operators need to do](#what-operators-need-to-do) · [Executive Summary](#executive-summary) · [Background](#background) · [Vulnerability Summary](#vulnerability-summary) · [Vulnerability Details](#vulnerability-details) · [Go Toolchain End-of-Life](#go-toolchain-end-of-life) · [Release Timeline](#release-timeline) · [Risk Assessment](#risk-assessment) · [Scope](#scope) · [Methodology](#methodology) · [Network Migration Path](#network-migration-path) · [Recommendations](#recommendations) · [References](#references)
+
+**Findings:** [CVE-2025-24883](#cve-2025-24883-off-curve-public-key-in-unmarshalpubkey) · [CVE-2026-22862](#cve-2026-22862-ecies-elliptic-curve-integrated-encryption-scheme-decrypt-ciphertext-length-undercheck) · [CVE-2026-26315](#cve-2026-26315-ecies-generateshared-accepts-unvalidated-public-key) · [CVE-2026-26314](#cve-2026-26314-secp256k1-isoncurve-field-boundary-bypass) · [CVE-2026-22868](#cve-2026-22868-kzg-kate-zaverucha-goldberg-blob-proof-verification-dos) · [CVE-2026-26313](#cve-2026-26313-p2p-rlp-recursive-length-prefix-item-count-memory-exhaustion) · [GraphQL query depth](#graphql-query-depth-dos)
 
 ---
 
@@ -157,14 +161,14 @@ The core-geth fork was then developed by ETC Labs until they left the ETC ecosys
 
 ### CVE-2025-24883 — Off-Curve Public Key in UnmarshalPubkey
 
-**Severity:** High
-**CVSS v3.1:** `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H` — **7.4 High**
-**GHSA:** GHSA-q26p-9cq4-7fc2
-**Component:** `crypto/crypto.go` — `UnmarshalPubkey()`
-**Affected:** etclabscore/core-geth ≤ v1.12.20
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `8e40b7e41`
-**Upstream reference:** go-ethereum PR #31100 / commit `159fb1a1d`
+- **Severity:** High
+- **CVSS v3.1:** `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H` — **7.4 High**
+- **GHSA:** GHSA-q26p-9cq4-7fc2
+- **Component:** `crypto/crypto.go` — `UnmarshalPubkey()`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `8e40b7e41`
+- **Upstream reference:** go-ethereum PR #31100 / commit `159fb1a1d`
 
 **Description:**
 `UnmarshalPubkey()` decoded a 65-byte uncompressed public key into `(x, y)` field elements but did not verify that the resulting point lies on the secp256k1 curve. A malicious peer could supply an off-curve point that passes unmarshaling without error, then produces invalid or undefined results in all subsequent ECDSA or ECDH operations that consume the deserialized key.
@@ -185,14 +189,14 @@ if !S256().IsOnCurve(x, y) {
 
 ### CVE-2026-22862 — ECIES (Elliptic Curve Integrated Encryption Scheme) Decrypt Ciphertext Length Undercheck
 
-**Severity:** High
-**CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H` — **7.5 High** (confirmed live exploitation, March 18, 2026)
-**GHSA:** GHSA-mr7q-c9w9-wh4h
-**Component:** `crypto/ecies/ecies.go` — `Decrypt()`
-**Affected:** etclabscore/core-geth ≤ v1.12.20
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `dc73f2e4f`
-**Upstream reference:** go-ethereum commit `638741b08`
+- **Severity:** High
+- **CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H` — **7.5 High** (confirmed live exploitation, March 18, 2026)
+- **GHSA:** GHSA-mr7q-c9w9-wh4h
+- **Component:** `crypto/ecies/ecies.go` — `Decrypt()`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `dc73f2e4f`
+- **Upstream reference:** go-ethereum commit `638741b08`
 
 **Description:**
 The ECIES `Decrypt()` function validated ciphertext minimum length using `rLen + hLen + 1`, where the `+ 1` accounts for only one byte beyond the point and HMAC fields. The correct minimum is `rLen + hLen + params.BlockSize` (AES block size = 16 bytes for the default ECIES parameters). The off-by-fifteen gap allows a ciphertext between 2 and 15 bytes shorter than a valid AES block to pass the length guard, after which array indexing proceeds into out-of-bounds memory.
@@ -243,14 +247,14 @@ Per the v1.12.21 release notes ([PR #694](https://github.com/etclabscore/core-ge
 
 ### CVE-2026-26315 — ECIES GenerateShared Accepts Unvalidated Public Key
 
-**Severity:** High
-**CVSS v3.1:** `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N` — **5.9 Medium** (key-oracle attack requires repeated unauthenticated handshake attempts)
-**GHSA:** GHSA-m6j8-rg6r-7mv8
-**Component:** `crypto/ecies/ecies.go` — `GenerateShared()`
-**Affected:** etclabscore/core-geth ≤ v1.12.20
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `2d3528803`
-**Upstream reference:** go-ethereum commit `46bee92f9`
+- **Severity:** High
+- **CVSS v3.1:** `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N` — **5.9 Medium** (key-oracle attack requires repeated unauthenticated handshake attempts)
+- **GHSA:** GHSA-m6j8-rg6r-7mv8
+- **Component:** `crypto/ecies/ecies.go` — `GenerateShared()`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `2d3528803`
+- **Upstream reference:** go-ethereum commit `46bee92f9`
 
 **Description:**
 The RLPx handshake uses ECIES decryption on unauthenticated input from the network. `GenerateShared()` — called during ECDH (Elliptic Curve Diffie-Hellman) shared-secret derivation — accepted a `*PublicKey` without verifying it lies on the curve. An ephemeral public key with `X == nil`, `Y == nil`, or coordinates not satisfying the secp256k1 curve equation would proceed into ECDH multiplication and fail only at MAC verification. The MAC failure reveals to the attacker whether the faulty key survived ECDH, which can be used as an oracle to leak bits of the node's static P2P private key across multiple handshake attempts.
@@ -271,14 +275,14 @@ if pub.X == nil || pub.Y == nil || !pub.Curve.IsOnCurve(pub.X, pub.Y) {
 
 ### CVE-2026-26314 — secp256k1 IsOnCurve Field Boundary Bypass
 
-**Severity:** High
-**CVSS v3.1:** `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H` — **8.1 High**
-**GHSA:** GHSA-2gjw-fg97-vg3r
-**Component:** `crypto/secp256k1/curve.go` — `IsOnCurve()`; `crypto/secp256k1/ext.h` — `secp256k1_ext_scalar_mul()`; `crypto/signature_nocgo.go` — `btCurve.IsOnCurve()`
-**Affected:** etclabscore/core-geth ≤ v1.12.20
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `2d3528803` (bundled with CVE-2026-26315)
-**Upstream reference:** go-ethereum commit `895a8597c`
+- **Severity:** High
+- **CVSS v3.1:** `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H` — **8.1 High**
+- **GHSA:** GHSA-2gjw-fg97-vg3r
+- **Component:** `crypto/secp256k1/curve.go` — `IsOnCurve()`; `crypto/secp256k1/ext.h` — `secp256k1_ext_scalar_mul()`; `crypto/signature_nocgo.go` — `btCurve.IsOnCurve()`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `2d3528803` (bundled with CVE-2026-26315)
+- **Upstream reference:** go-ethereum commit `895a8597c`
 
 **Description:**
 `IsOnCurve()` verified the curve equation `y² ≡ x³ + b (mod P)` but did not first verify that the coordinates `x` and `y` are within the field, i.e., strictly less than the curve prime `P`. Due to modular arithmetic, coordinates equal to or greater than `P` may still satisfy the curve equation when reduced, but they represent invalid (non-canonical) points. Additionally, the C-level `secp256k1_ext_scalar_mul` function did not check the return value of `secp256k1_fe_set_b32`, which returns 0 when a coordinate is out-of-field. A crafted out-of-field coordinate could therefore bypass `IsOnCurve` and proceed into scalar multiplication, producing undefined or attacker-influenced results.
@@ -323,13 +327,13 @@ if (!secp256k1_fe_set_b32(&feX, point) ||
 
 ### CVE-2026-22868 — KZG (Kate-Zaverucha-Goldberg) Blob Proof Verification DoS
 
-**Severity:** Medium
-**CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L` — **5.3 Medium** (inactive on ETC in normal operation; rated against theoretical worst-case exposure)
-**Component:** `core/txpool/validation.go` — `validateBlobSidecar()`; `eth/fetcher/tx_fetcher.go` — `Enqueue()`
-**Affected:** etclabscore/core-geth ≤ v1.12.20 (code present but inactive on ETC)
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `1419c5310`
-**Upstream reference:** go-ethereum commit `fdfd1235a` (v1.16.8)
+- **Severity:** Medium
+- **CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L` — **5.3 Medium** (inactive on ETC in normal operation; rated against theoretical worst-case exposure)
+- **Component:** `core/txpool/validation.go` — `validateBlobSidecar()`; `eth/fetcher/tx_fetcher.go` — `Enqueue()`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20 (code present but inactive on ETC)
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `1419c5310`
+- **Upstream reference:** go-ethereum commit `fdfd1235a` (v1.16.8)
 
 **ETC Applicability:** [@diega stated that this is not applicable to ETC](https://github.com/etclabscore/core-geth/issues/692) — ETC does not support EIP-4844 blob transactions, so the KZG code path is not reached in normal operation on the ETC network. The v1.12.22 release at `etclabscore/core-geth` does not address it. The v1.13.0 patch follows the go-ethereum approach: introduces `ErrKZGVerificationError` as a sentinel error and disconnects any peer that delivers a transaction with an invalid KZG proof, preventing repeated DoS attempts from the same peer.
 
@@ -355,14 +359,14 @@ if delivery.violation != nil {
 
 ### CVE-2026-26313 — P2P RLP (Recursive Length Prefix) Item Count Memory Exhaustion
 
-**Severity:** High
-**CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H` — **7.5 High**
-**GHSA:** GHSA-689v-6xwf-5jf3
-**Component:** `eth/protocols/eth/`, `eth/protocols/snap/`, `p2p/tracker/`
-**Affected:** etclabscore/core-geth ≤ v1.12.20
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `5d0cb8b34`
-**Upstream reference:** go-ethereum PR #33835
+- **Severity:** High
+- **CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H` — **7.5 High**
+- **GHSA:** GHSA-689v-6xwf-5jf3
+- **Component:** `eth/protocols/eth/`, `eth/protocols/snap/`, `p2p/tracker/`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `5d0cb8b34`
+- **Upstream reference:** go-ethereum PR #33835
 
 **Description:**
 The P2P message handler validated message size against a 10 MiB cap (`maxMessageSize`) before decoding, but did not validate the number of items declared in the RLP list header. A malicious peer could craft a valid RLP list header claiming millions of tiny items within the 10 MiB budget. When `msg.Decode` ran, it would allocate a pointer or struct object for each declared item before any further validation, causing out-of-memory crashes proportional to the declared item count rather than the actual payload size.
@@ -379,21 +383,20 @@ An earlier form of this patch counted items before decoding instead, because the
 
 Response messages are bounded by the request they answer rather than by a fixed ceiling, which is both tighter than a static limit and incapable of refusing an honest peer. Transaction broadcasts keep an explicit limit of 5,000, and block announcements, which are unsolicited and not lazily decoded, keep one of 2,048.
 
-
-**Status in v1.12.22:** Partially mitigated — OOM crash prevented, CPU amplification DoS remains open.  
-**Status in v1.13.0:** Patched. Response messages are bounded by their pending request, transaction broadcasts and block announcements by explicit ceilings.
+- **Status in v1.12.22:** Partially mitigated — OOM crash prevented, CPU amplification DoS remains open.
+- **Status in v1.13.0:** Patched. Response messages are bounded by their pending request, transaction broadcasts and block announcements by explicit ceilings.
 
 ---
 
 ### GraphQL Query Depth DoS
 
-**Severity:** Medium
-**CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H` — **7.5 High** (assumes GraphQL endpoint exposed; off by default)
-**Related advisory:** GHSA-mh3m-8c74-74xh / CVE-2022-21708 — a stack-overflow DoS in `graphql-go` reachable only when `MaxDepth` is enabled. Affected `<v1.3.0`; patched in v1.3.0
-**Component:** `graphql/service.go`; `go.mod` — `graphql-go v1.3.0 → v1.9.0`
-**Affected:** etclabscore/core-geth ≤ v1.12.20
-**Patched:** ethereumclassic/core-geth v1.13.0
-**Commit:** `6c2d383fa`
+- **Severity:** Medium
+- **CVSS v3.1:** `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H` — **7.5 High** (assumes GraphQL endpoint exposed; off by default)
+- **Related advisory:** GHSA-mh3m-8c74-74xh / CVE-2022-21708 — a stack-overflow DoS in `graphql-go` reachable only when `MaxDepth` is enabled. Affected `<v1.3.0`; patched in v1.3.0
+- **Component:** `graphql/service.go`; `go.mod` — `graphql-go v1.3.0 → v1.9.0`
+- **Affected:** etclabscore/core-geth ≤ v1.12.20
+- **Patched:** ethereumclassic/core-geth v1.13.0
+- **Commit:** `6c2d383fa`
 
 **Disclosure:** Identified during cross-client security review, combining review of the published `graphql-go` advisory with direct inspection of `graphql/service.go`, which confirmed that no depth limit was configured at the application layer. No separate responsible disclosure to `etclabscore` was required as the dependency advisory was already public; the finding was included in the patch set submitted to `ethereumclassic/core-geth`.
 
@@ -457,8 +460,8 @@ s, err := graphql.ParseSchema(schema, &q, graphql.MaxDepth(maxQueryDepth))
 
 ## Scope
 
-**Audit target:** `etclabscore/core-geth` at tag `v1.12.20` (commit `c2fb44129`)  
-**Audit date range:** February – March 2026  
+- **Audit target:** `etclabscore/core-geth` at tag `v1.12.20` (commit `c2fb44129`)
+- **Audit date range:** February – March 2026
 **In scope:**
 - All Go source packages inherited from go-ethereum with known CVE exposure
 - Go toolchain version and dependency security posture
@@ -505,7 +508,6 @@ The ETC network is migrating to [Fukuii](https://fukuii.org) ([github.com/fukuii
 - **GraphQL endpoint:** If `--graphql` is enabled on public-facing nodes, disable it until v1.13.0 is released or verify v1.12.22 is in place before re-opening the port.
 
 ---
-
 
 ## References
 

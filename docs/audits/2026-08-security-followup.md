@@ -1,10 +1,12 @@
 # Core-Geth Security Follow-Up — August 2026
 
-**Follows:** [`2026-03-security-audit.md`](./2026-03-security-audit.md)
-**Subject:** `etclabscore/core-geth` v1.12.23 ("Argos"), released 14 August 2026
-**Prepared by:** The core-geth Authors
-**Method:** direct measurement against `etclabscore/core-geth` at tag `v1.12.23`, and
-against the advisory records at OSV and the GitHub Advisory Database
+- **Follows:** [`2026-03-security-audit.md`](./2026-03-security-audit.md)
+- **Subject:** `etclabscore/core-geth` v1.12.23 ("Argos"), released 14 August 2026
+- **Prepared by:** The core-geth Authors
+- **Method:** direct measurement against `etclabscore/core-geth` at tag `v1.12.23`, and
+  against the advisory records at OSV and the GitHub Advisory Database
+
+**On this page:** [What operators need to do](#what-operators-need-to-do) · [Summary](#summary) · [What v1.12.23 contains](#what-v11223-contains) · [What v1.12.23 does not change](#what-v11223-does-not-change) · [One response cap in v1.12.23 can still reject honest peers](#finding-one-response-cap-in-v11223-can-still-reject-honest-peers) · [CVE identifier reconciliation](#cve-identifier-reconciliation) · [Status of v1.13.0](#status-of-v1130) · [References](#references)
 
 ---
 

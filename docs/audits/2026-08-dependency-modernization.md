@@ -8,6 +8,8 @@ source-level CVE remediation; this one covers what changed underneath the code.
 **Baseline:** commit `7ef3ecd7a`, 2024-12-16, the last commit of the archived
 `v1.12.x` development line.
 
+**On this page:** [Why this work was necessary](#why-this-work-was-necessary) · [Toolchain](#toolchain) · [Dependency delta](#dependency-delta) · [What deliberately did not move](#what-deliberately-did-not-move) · [Linter](#linter) · [Build and release pipeline](#build-and-release-pipeline) · [Verification](#verification) · [Outstanding](#outstanding)
+
 ## Why this work was necessary
 
 The archived line was pinned to Go 1.21 across every build surface. Under Go's

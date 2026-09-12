@@ -12,6 +12,8 @@ downloading and inspecting the archives rather than by reading the configuration
 built them. `v1.12.20` (June 2024) is the last release before this repository was
 created from the archived development line; the other three were published in 2026.
 
+**On this page:** [Why the artifacts needed a pass of their own](#why-the-artifacts-needed-a-pass-of-their-own) · [The platform floor was lost across the v1.12.x releases](#finding-the-platform-floor-was-lost-across-the-v112x-releases) · [The macOS archive contains a binary most of its downloaders cannot run](#finding-the-macos-archive-contains-a-binary-most-of-its-downloaders-cannot-run) · [The v1.12.x line no longer builds against a C23 compiler](#finding-the-v112x-line-no-longer-builds-against-a-c23-compiler) · [The v1.12.x releases were published from outside this organization](#finding-the-v112x-releases-were-published-from-outside-this-organization) · [No container image was ever published from this repository](#finding-no-container-image-was-ever-published-from-this-repository) · [What a vulnerability scanner will say about these artifacts](#what-a-vulnerability-scanner-will-say-about-these-artifacts) · [How v1.13.0 sets its platform floor](#how-v1130-sets-its-platform-floor) · [What this means if you are upgrading](#what-this-means-if-you-are-upgrading) · [Verification](#verification) · [Outstanding](#outstanding)
+
 ## Why the artifacts needed a pass of their own
 
 A release is not what the build configuration says it builds. It is what the archive
