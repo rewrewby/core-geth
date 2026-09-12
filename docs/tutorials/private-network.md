@@ -1,11 +1,11 @@
 # Tutorial: Operating a Private Network
 
-### Operating a private network
+## Operating a private network
 
 Maintaining your own private network is more involved as a lot of configurations taken for
 granted in the official networks need to be manually set up.
 
-#### Defining the private genesis state
+### Defining the private genesis state
 
 First, you'll need to create the genesis state of your networks, which all nodes need to be
 aware of and agree upon. This consists of a small JSON file (e.g. call it `genesis.json`):
@@ -58,7 +58,7 @@ set:
 $ geth init path/to/genesis.json
 ```
 
-#### Creating the rendezvous point
+### Creating the rendezvous point
 
 With all nodes that you want to run initialized to the desired genesis state, you'll need to
 start a bootstrap node that others can use to find each other in your network and/or over
@@ -78,7 +78,7 @@ accessible IP to get the actual `enode` URL.
 
     You could also use a full-fledged `geth` node as a bootnode, but it's the less recommended way.
 
-#### Starting up your member nodes
+### Starting up your member nodes
 
 With the bootnode operational and externally reachable (you can try
 `telnet <ip> <port>` to ensure it's indeed reachable), start every subsequent `geth`
@@ -95,7 +95,7 @@ $ geth --datadir=path/to/custom/data/folder --bootnodes=<bootnode-enode-url-from
     Since your network will be completely cut off from the main and test networks, you'll
     also need to configure a miner to process transactions and create new blocks for you.
 
-#### Running a private miner
+### Running a private miner
 
 Mining on the public Ethereum network is a complex task as it's only feasible using GPUs,
 requiring an OpenCL or CUDA enabled `ethminer` instance. For information on such a

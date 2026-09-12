@@ -13,7 +13,7 @@ as the name of my new network.
  - AlphaBeta Coin will have the "Istanbul" (aka "ETC's Phoenix") protocol upgrades and
    EVM features activated from genesis (the very first block (number `0`)).
 
-### Define the configuration.
+## Define the configuration.
 
 A branch [`docs/_tutorial-add-network`](https://github.com/ethereumclassic/core-geth/tree/docs/_tutorial-add-network) 
 is provided to illustrate the code necessary to define implement basic 
@@ -45,7 +45,7 @@ We can now pursue two paths:
 
 This tutorial won't cover (2) (yet). 
 
-#### Initialize core-geth's database from the JSON configuration.
+### Initialize core-geth's database from the JSON configuration.
 
 Build `geth`.
 ```
@@ -161,7 +161,7 @@ INFO [03-10|09:07:54.403] New local node record                    seq=4 id=0a86
 INFO [03-10|09:08:06.969] Looking for peers                        peercount=0 tried=5 static=0
 ```
 
-#### Establish a network.
+### Establish a network.
 
 In order to establish your network, you'll want to make sure you have a bootnode
 available that new nodes coming online can use to query for their peers.
