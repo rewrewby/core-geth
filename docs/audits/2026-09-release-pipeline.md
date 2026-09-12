@@ -174,6 +174,36 @@ gh attestation verify core-geth-linux-v1.13.0.zip --repo ethereumclassic/core-ge
 
 What the guarantee still rests on is control of the release tag, recorded below.
 
+## Finding: no container image was ever published from this repository
+
+`2026-08-dependency-modernization.md` records the cause — `build/ci.go` carried a
+complete image-publishing implementation that nothing ever called. The images under
+the previous namespace came from a registry-side integration configured outside the
+source tree, so the capability was absent rather than broken, and nothing in the
+repository looked wrong.
+
+**`v1.13.0` publishes images from this repository**, for `linux/amd64` and
+`linux/arm64`, each built on a native runner rather than under emulation and merged
+into a multi-architecture manifest. Two variants are published: the client alone,
+and `alltools-` carrying the full set of executables.
+
+**`:latest` is reserved for full releases.** It is what a bare `docker pull`
+resolves to, so a release candidate must never take it — an operator who omits a
+tag is asking for the current stable client, not the newest thing that exists. The
+tag is applied only when the version carries no prerelease suffix:
+
+```
+v1.13.0        -> also tagged :latest
+v1.13.0-rc1    -> published under its own name only
+```
+
+That rule is explicit rather than inferred. The mechanism it replaces —
+`docker/metadata-action`'s `latest=auto` — reads as though it withholds the moving
+tag from a prerelease and does not: `auto` keys off the tag-ref rule, which has no
+concept of one. Measured during a pipeline rehearsal, where a build named
+`pipeline-test` was published as `:latest`. A defect of this shape is invisible in
+a green pipeline and visible only in what an untagged pull returns.
+
 ## How v1.13.0 sets its platform floor
 
 Pinning to a specific build image is an improvement and not a solution: the floor is
@@ -247,12 +277,12 @@ Windows image here. The remedy does not depend on which toolchain you meet it wi
 
 ## Outstanding
 
-- **Tag protection is what the attestation guarantee rests on.** An attestation binds an
-  archive to the workflow run that produced it; it does not decide who may start such a
-  run. Anyone able to push a `v*` tag can therefore produce artifacts carrying a valid
-  attestation. Restricting tag creation is a repository setting rather than a change to
-  this tree, and it is the control that makes the rest of this meaningful.
 - **The container images carry no attestation.** The release archives do. Signing an image
   is a separate mechanism from attesting a file, and it has not been applied here.
+- **Container package visibility is a registry setting, not a repository one.** A registry
+  creates a new package private by default, so the first published image is unreachable
+  until someone makes it public — and making it public is the moment every tag it carries
+  starts serving real traffic. Check what `:latest` points at before flipping it, not
+  after.
 - **The container base images are floating tags**, carried forward from the dependency
   pass, where the same objection is recorded.
