@@ -115,8 +115,11 @@ defense against deep reorganizations. It is a client-side policy rather than a s
 transition, which is why it appears as two rows: the block at which it defaults on, and
 the block at which it defaults off.
 
-Ethereum Classic does not implement EIP-1559. Transactions are legacy and EIP-2930
-access-list types.
+**Through Spiral — the head configuration this client implements — Ethereum Classic has
+not adopted EIP-1559**, so transactions are the legacy and EIP-2930 access-list types.
+That is the state of the fork schedule in `params/`, not a permanent property of the
+network: adopting it is a protocol decision for Ethereum Classic to make, and a client
+question after that.
 
 ### Wire protocol
 
