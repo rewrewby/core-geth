@@ -29,11 +29,11 @@ all:
 test: all
 	$(GORUN) build/ci.go test -timeout 20m
 
-# DEPRECATED.
-# No attempt will be made after the Istanbul fork to maintain
-# Parity configuration support.
-sync-parity-chainspecs:
-	./params/parity.json.d/sync-parity-remote.sh
+# The `sync-parity-chainspecs` target was removed here. It invoked
+# ./params/parity.json.d/sync-parity-remote.sh, which this repository does not
+# contain and has no tracked history of -- so the target could not run at all,
+# and had been marked deprecated besides: no attempt is made after the Istanbul
+# fork to maintain Parity configuration support.
 
 test-coregeth: \
  test-coregeth-features \

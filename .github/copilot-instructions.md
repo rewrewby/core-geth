@@ -177,7 +177,9 @@ confirmation. The comment can drift from the SHA; trust the SHA.
 
 - **`swarm/` was removed from `main`** on 2026-08-30; it remains on `master`
   and the archive branch.
-- **`sync-parity-chainspecs` is marked deprecated in the `Makefile` itself.**
+- **`sync-parity-chainspecs` was removed from the `Makefile`** — it invoked a
+  script this repository does not contain, and Parity configuration support is
+  not maintained past the Istanbul fork.
 - **`AUTHORS` is generated, not written**, by `build/update-license.go` from
   `git shortlog` via `.mailmap`. Nothing runs it, so it is stale. Never hand-edit
   it — the header is a constant in the generator and an edit is reverted on the

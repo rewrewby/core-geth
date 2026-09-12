@@ -270,8 +270,10 @@ comment can drift from the SHA without anything failing, so trust the SHA.
 
 - **`swarm/` was removed from `main`** on 2026-08-30 (`55ca851c2`); it no longer
   exists in this tree. It remains on `master` and the archive branch.
-- **The `sync-parity-chainspecs` target is marked deprecated in the `Makefile`
-  itself.** Parity configuration support is not maintained past the Istanbul fork.
+- **The `sync-parity-chainspecs` target was removed from the `Makefile`.** It
+  invoked a script this repository does not contain, so it could never run, and
+  Parity configuration support is not maintained past the Istanbul fork. Do not
+  restore it without restoring the script it needs.
 - **`AUTHORS` is generated, not written.** `build/update-license.go` produces it
   from `git shortlog -s -n -e`, canonicalized through `.mailmap`. Nothing runs it
   — no `make` target, no CI job — so the file is a stale snapshot. **Never edit it
