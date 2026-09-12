@@ -1,0 +1,258 @@
+# Release artifacts — v1.12.x archive to v1.13.0
+
+This document records what the published `v1.12.x` releases actually contain, what
+`v1.13.0` ships instead, and why an operator on the older line should move. It is a
+companion to `2026-03-security-audit.md` and `2026-08-security-followup.md`, which
+cover source-level CVE remediation, and to `2026-08-dependency-modernization.md`,
+which covers the toolchain and module graph. This one covers the artifacts those
+produce — the files an operator downloads and runs.
+
+**Baseline:** the four published releases `v1.12.20` through `v1.12.23`, measured by
+downloading and inspecting the archives rather than by reading the configuration that
+built them. `v1.12.20` (June 2024) is the last release before this repository was
+created from the archived development line; the other three were published in 2026.
+
+## Why the artifacts needed a pass of their own
+
+A release is not what the build configuration says it builds. It is what the archive
+contains, and the two can disagree for a long time without anything reporting it.
+
+The defects below are invisible in the source, in the build log, and in the release
+notes. The build succeeds, the tests pass, the archive is well-formed and correctly
+named, and the checksum matches. They are visible only by opening the published file
+and reading the binary inside — which is what this pass did, and which is why they had
+survived across releases.
+
+## Finding: the platform floor was lost across the v1.12.x releases
+
+A binary linked against glibc runs on that version or newer, never older. The
+requirement is recorded in the artifact, so it can be read directly:
+
+| Release | Published | Highest glibc symbol required |
+|---|---|---|
+| `core-geth-linux-v1.12.20.zip` | 2024-06 | **GLIBC_2.17** |
+| `core-geth-linux-v1.12.21.zip` | 2026-03 | **GLIBC_2.34** |
+| `core-geth-linux-v1.12.22.zip` | 2026-03 | **GLIBC_2.34** |
+| `core-geth-linux-v1.12.23.zip` | 2026-08 | **GLIBC_2.34** |
+
+**Every Arm archive moved the same way, in the same release.** These are built by a
+separate cross-compilation path, so they are an independent instance of the defect
+rather than the same artifact measured twice:
+
+| Archive | v1.12.20 | v1.12.23 |
+|---|---|---|
+| `arm5` | 2.28 | **2.34** |
+| `arm7` | 2.28 | **2.34** |
+| `arm64` | **2.17** | **2.34** |
+
+The floor did not drift. It moved once, between `v1.12.20` and `v1.12.21`, and the
+mechanism is visible in the symbols themselves. Every symbol that requires 2.34 in the
+later binaries belongs to one set:
+
+```
+__libc_start_main   dlopen  dlsym  dlclose  dlerror
+pthread_create  pthread_join  pthread_detach  pthread_key_create  ...
+```
+
+glibc 2.34 merged `libpthread` and `libdl` into `libc`, so any binary linked against
+glibc 2.34 or newer acquires that whole family at that version. The later releases were
+therefore built on a host whose glibc was 2.34 or newer, while `v1.12.20` was not. No
+change in the source causes this, and nothing in a build log reports it.
+
+Systems that can run `v1.12.20` but cannot run any later `v1.12.x` release:
+
+| Distribution | glibc |
+|---|---|
+| Ubuntu 20.04 LTS | 2.31 |
+| Debian 11 | 2.31 |
+| RHEL / Rocky / AlmaLinux 8 | 2.28 |
+| Amazon Linux 2 | 2.26 |
+
+Anything older than 2.34 is affected; those are the widely deployed cases. An operator
+on one of them who followed the security guidance to upgrade could not run the result.
+
+**`v1.13.0` requires GLIBC_2.17 on x86_64**, restoring every system above and matching
+the last release before this repository was created. Each Arm target is restored to the
+floor `v1.12.20` shipped for it — 2.17 on arm64, 2.28 on the 32-bit targets — and every
+one of them is checked at build time.
+
+**The difference that matters is not the number but how it is held.** `v1.12.20`'s 2.17
+was a byproduct of whichever machine built it, which is exactly why it was lost without
+anyone deciding to lose it. `v1.13.0` states the floor as a build input and **fails the
+release** if the artifact does not meet it.
+
+## Finding: the macOS archive contains a binary most of its downloaders cannot run
+
+| Release | `core-geth-osx-<version>.zip` contains |
+|---|---|
+| v1.12.20 | Mach-O 64-bit **arm64** |
+| v1.12.21 | Mach-O 64-bit **arm64** |
+| v1.12.22 | Mach-O 64-bit **arm64** |
+| v1.12.23 | Mach-O 64-bit **arm64** |
+
+Unlike the glibc floor, this one predates this repository. It begins at `v1.12.20`:
+`v1.12.19` (February 2024) contains an x86_64 binary, and every release since contains an
+Arm64 one under the same name.
+
+The archive name records no architecture, and earlier releases under that name were
+x86_64. The build selected a floating image label, which changed meaning when the
+provider moved it to Apple Silicon. An Intel Mac user following the same download path
+as always receives a binary their machine cannot execute, and the failure appears at
+execution rather than at download.
+
+**`v1.13.0` publishes both architectures and names them.** The `osx` name keeps the
+architecture earlier releases shipped, so an existing download path does not silently
+change meaning a second time, and Apple Silicon is published beside it under its own
+name.
+
+## Finding: the v1.12.x line no longer builds against a C23 compiler
+
+This affects anyone who builds rather than downloads, including a distributor producing
+their own packages.
+
+`v1.12.x` carries `blst` v0.3.11 — confirmed at both `v1.12.20` and `v1.12.23` — whose
+public header defines `bool` with a `typedef`, guarded only against C++ and pre-C99
+compilers. C23 makes `bool` a language keyword, so that definition became illegal. The
+build fails inside a vendored dependency's header, at a line no change in this repository
+touched.
+
+**Compilers have been moving their default to C23 independently of each other**, so this
+is not confined to one platform. This project met it first in its Alpine-based Docker
+build, recorded in `2026-03-security-audit.md`; it is also reported against the compiler
+bundled with current Windows images. Any toolchain that defaults to C23 reaches the same
+line.
+
+**`v1.13.0` carries `blst` v0.3.17**, whose header guards the definition on the standard
+version and uses the keyword under C23. The upgrade began in the CVE work and was carried
+forward by the dependency pass in `2026-08-dependency-modernization.md`; it is recorded
+here because it is a concrete way the older line has stopped building rather than merely
+aged.
+
+## Finding: the v1.12.x releases were published from outside this organization
+
+Every `v1.12.x` release was published from `etclabscore/core-geth`, the repository this
+one was created from, which sits outside this organization — `v1.12.23` was cut there in
+August 2026. If you are running a `v1.12.x` binary today, that is where it came from, and
+three things follow:
+
+- **It was produced by a pipeline this project does not run and had not reviewed.** That
+  is how the platform floor above moved across three releases with nobody observing it.
+- **Its checksum does not close the gap.** Each archive is published with a `.sha256`
+  beside it, which establishes that the download was not corrupted in transit. It says
+  nothing about what produced the file, because whoever publishes the artifact publishes
+  the checksum.
+- **Nothing binds it to the source it claims to come from.** That line publishes no
+  signature and no build attestation, so the link between a release archive and the commit
+  it was built from rests entirely on the publisher's assertion.
+
+**Of the three findings above, the floor regression is the only one drawn on the handoff
+boundary — and there it is exact.** `7ef3ecd7a` (2024-12-16) is the last commit on the
+predecessor's master before this repository was created on 2024-12-21; the tag
+`archive/etclabscore-2024-12` marks it. `v1.12.20`, published June 2024 and the last
+release before that boundary, carries a 2.17 Linux floor and the Arm floors `v1.13.0`
+restores. All three releases carrying the regression were published in 2026, well after
+maintenance had moved here. **Nothing that was handed over introduced it.**
+
+**The other two findings are older, and are not drawn on that boundary.** The macOS archive
+has contained an arm64 binary under an architecture-free name across all four releases
+measured, and `blst` v0.3.11 is carried by the whole `v1.12.x` line — confirmed at both
+ends of it. Both predate the handoff, and neither follows from it.
+
+**`v1.13.0` is published from this repository, and every archive carries a build
+attestation.** The client, the build and the artifacts are back in one place the project
+controls, and each file can be traced to the run that produced it rather than resting on
+anyone's word.
+
+The attestation is minted against a short-lived certificate issued to the workflow run
+itself, so no signing key is stored anywhere and none can be stolen. It records which
+workflow, at which commit, produced a given file — the question a checksum cannot answer.
+You can check it yourself against a downloaded archive:
+
+```bash
+gh attestation verify core-geth-linux-v1.13.0.zip --repo ethereumclassic/core-geth
+```
+
+What the guarantee still rests on is control of the release tag, recorded below.
+
+## How v1.13.0 sets its platform floor
+
+Pinning to a specific build image is an improvement and not a solution: the floor is
+still inherited, and images are retired on their own schedule, which is how a floor moves
+with nobody deciding to move it.
+
+`v1.13.0` states the floor instead of inheriting it. Linux release archives are built
+with a cross-compilation toolchain that targets a chosen glibc directly, pinned to an
+exact release and verified against a checksum recorded in `build/checksums.txt` alongside
+the Go pin.
+
+**The release is gated on the measurement, not on the intent.** The build fails, rather
+than publishing, if the artifact's floor rises above target or if the C23 symbol
+redirections that raise it reappear. The regression above shipped three times because
+nothing checked; a fix with no check is a defect waiting to recur.
+
+### Why the compiler is the lever
+
+The obvious alternative — build without cgo and link statically — is not available in
+either line. Two packages require it unconditionally:
+
+- `github.com/ethereum/evmc/v7/bindings/go/evmc` excludes all of its Go files when cgo
+  is disabled.
+- `consensus/lyra2` defines its hashing entry point only in a cgo file that compiles the
+  algorithm's C sources, with no alternative implementation.
+
+So a C toolchain is always involved, and the only question is which one and what it
+targets. That is what makes controlling the compiler the remedy rather than one option
+among several.
+
+## What this means if you are upgrading
+
+- **If you run a distribution with glibc older than 2.34** — Ubuntu 20.04, Debian 11,
+  RHEL 8, Amazon Linux 2 among them — no `v1.12.x` release after `v1.12.20` runs on your
+  system. `v1.13.0` does.
+- **If you run an Intel Mac**, none of the four `osx` archives measured here is for your
+  machine. `v1.13.0` publishes one that is, under the same name.
+- **If you build from source on Windows**, the `v1.12.x` line no longer builds on a
+  current image. `v1.13.0` does.
+- **Everyone else**: the `v1.13.0` Linux binary has a lower glibc requirement than any
+  `v1.12.x` release after `v1.12.20`, so an upgrade cannot reduce the set of systems it
+  runs on.
+
+Nothing about how the client is invoked changes, and the executable is still named
+`geth`. The migration guide covers the upgrade itself.
+
+## Verification
+
+Each check below was calibrated so that it could report a negative:
+
+- Platform claims read from the **published release archives**, downloaded and unpacked,
+  rather than inferred from build configuration.
+- glibc requirements read from each binary's dynamic symbol table with `objdump -T`; the
+  2.34 attribution confirmed by listing the symbols carrying that version rather than by
+  reading the maximum alone.
+- Architecture read from the Mach-O header.
+- The floor gates tested in both directions, against real artifacts rather than synthetic
+  values: each accepts the corresponding `v1.13.0` build and the `v1.12.20` baseline, and
+  each rejects the `v1.12.23` artifact for its own target.
+- The `v1.13.0` build verified through the same entry point the release uses, with the
+  cryptographic dependency affected by the C23 change actually linked, rather than
+  through a reduced build that would not have exercised it.
+
+**One claim is not a measurement of ours, and is marked rather than blended in.** The
+`blst` headers were read directly at both versions, and the version each line carries was
+confirmed at the `v1.12.20` and `v1.12.23` release tags — that part is measured, as is the
+Alpine Docker failure this project met itself. That current Windows images also default to
+C23 is taken from a reported build failure against `blst.h:27` and was not reproduced on a
+Windows image here. The remedy does not depend on which toolchain you meet it with:
+`v1.13.0` carries a header that is correct under either default.
+
+## Outstanding
+
+- **Tag protection is what the attestation guarantee rests on.** An attestation binds an
+  archive to the workflow run that produced it; it does not decide who may start such a
+  run. Anyone able to push a `v*` tag can therefore produce artifacts carrying a valid
+  attestation. Restricting tag creation is a repository setting rather than a change to
+  this tree, and it is the control that makes the rest of this meaningful.
+- **The container images carry no attestation.** The release archives do. Signing an image
+  is a separate mechanism from attesting a file, and it has not been applied here.
+- **The container base images are floating tags**, carried forward from the dependency
+  pass, where the same objection is recorded.
