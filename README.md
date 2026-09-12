@@ -120,9 +120,19 @@ access-list types.
 
 ### Wire protocol
 
-**EIP-7642 (`eth/69`) is deliberately excluded.** It removes Total Difficulty from the
-protocol handshake, and Ethereum Classic requires that field for proof-of-work chain
-selection. Do not restore it.
+**This client speaks `eth/68`, and that is the version it will serve until it is
+retired.** The v1.13 series exists to close the security gap and carry Ethereum Classic
+on a supported toolchain while the client is sunset, so it takes no new protocol
+version.
+
+`eth/69` (EIP-7642) removes Total Difficulty from the handshake, which this client's
+proof-of-work chain selection reads — so adopting it here would mean reworking that path
+in a client already scheduled for retirement. **That is a scoping decision about this
+client, not a limitation of Ethereum Classic.** `eth/69` is already implemented for
+Ethereum Classic in [Fukuii](https://fukuii.org), developed at
+[`fukuii-project/fukuii-cli`](https://github.com/fukuii-project/fukuii-cli), and reaches
+the network through it and through the Ethereum Classic extensions maintained against
+mainstream Ethereum clients.
 
 ## Build
 
