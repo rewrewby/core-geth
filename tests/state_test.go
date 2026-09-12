@@ -94,6 +94,85 @@ func initMatcher(st *testMatcher) {
 	// Broken tests:
 	// EOF is not part of cancun
 	st.skipLoad(`^stEOF/`)
+
+	// Refusal fixtures whose stated rule is not the rule this client applies.
+	//
+	// Both were previously green for the wrong reason: until expectException was
+	// actually compared, any refusal satisfied any stated rule. They are recorded
+	// as expected failures rather than skipped, because fails() also reports a
+	// test that starts passing -- so a fixture or client correction is noticed
+	// rather than silently absorbed.
+	//
+	// These patterns are matched against the full Go test name -- "TestState/..."
+	// -- not against the fixture path, so they are deliberately unanchored.
+	//
+	// ValueOverflow.json exists in both corpora. TestState walks the Ethereum
+	// copy first, so the "#01" suffix is the ETC copy, and only it is named here:
+	// the Ethereum copy labels the same fixture TR_RLP_WRONGVALUE and passes, and
+	// naming it too would trip the "succeeded unexpectedly" arm of fails().
+	//
+	// The suffix is an ordinal over walk order, so it is only as stable as the
+	// corpora are -- but a corpus change cannot silently repoint it. Both drift
+	// outcomes are hard failures: if the ordinal stops matching the ETC copy the
+	// pattern no longer matches a failing test and fails() reports the expected
+	// failure as missing, and if it lands on the Ethereum copy that test starts
+	// passing under a fails() pattern and is reported as succeeding unexpectedly.
+	// That property is what makes an ordinal acceptable here where it would
+	// normally be too brittle to rely on.
+	//
+	// The ETC copy labels it a balance refusal. The transaction carries a value
+	// above 2^256, which this client rejects while decoding, so the balance check
+	// is never reached. The Ethereum copy's label is the one matching observed
+	// behavior.
+	st.fails(`stTransactionTest/ValueOverflow\.json#01`,
+		"ETC corpus labels this TR_NoFunds; the value exceeds 256 bits and is refused at decode, "+
+			"never reaching the balance check (the Ethereum corpus labels the same fixture TR_RLP_WRONGVALUE)")
+
+	// A blob transaction with an empty `to` is a create, and the fixture states
+	// TR_BLOBCREATE for it.
+	//
+	// The divergence is a property of THIS HARNESS, not of the client. The rule
+	// the fixture names is implemented and reachable: core/state_transition.go's
+	// preCheck returns core.ErrBlobTxCreate for a blob message with a nil `to`.
+	// It is never reached here because RunNoVerify round-trips post.TxBytes
+	// through types.Transaction.UnmarshalBinary before ApplyMessage is called,
+	// and BlobTx carries `to` as a non-nillable value, so decoding refuses the
+	// empty address first and returns an RLP error instead.
+	//
+	// So the fixture's label is arguably right about the client and wrong only
+	// about the order this harness applies its checks in. Recording that
+	// distinction matters: read as a client defect it points at
+	// core/state_transition.go, where there is nothing to fix. Removing the
+	// entry means changing the harness to reach preCheck, not changing consensus
+	// code.
+	st.fails(`Cancun/stEIP4844-blobtransactions/createBlobhashTx\.json`,
+		"fixture states TR_BLOBCREATE; this harness decodes post.TxBytes before ApplyMessage, so the "+
+			"empty `to` is refused by the BlobTx decoder and core.ErrBlobTxCreate is never reached")
+}
+
+// stateTestDirs are the corpora TestState walks.
+//
+// It is a function rather than a literal inside TestState so that anything
+// needing to know which corpora actually execute can read it instead of
+// restating it. TestRefusalVocabularyCoversExecutedCorpora is the caller that
+// matters: a restated list is how the execution-spec-tests corpus came to be
+// absent from the refusal-name census while CI was executing it.
+func stateTestDirs() []string {
+	return []string{
+		filepath.Join(baseDir, "EIPTests", "StateTests"),
+		stateTestDir,
+		benchmarksDir,
+
+		stateTestDirETC,
+		legacyTestDirETC,
+	}
+}
+
+// refusalCorpusDirs is every directory any state-test entry point walks: the
+// corpora TestState covers, plus the one TestLegacyState covers and the one
+// TestExecutionSpecState covers. Adding an entry point means adding it here.
+func refusalCorpusDirs() []string {
+	return append(stateTestDirs(), legacyStateTestDir, executionSpecStateTestDir)
 }
 
 func TestState(t *testing.T) {
@@ -101,14 +180,7 @@ func TestState(t *testing.T) {
 
 	st := new(testMatcher)
 	initMatcher(st)
-	for _, dir := range []string{
-		filepath.Join(baseDir, "EIPTests", "StateTests"),
-		stateTestDir,
-		benchmarksDir,
-
-		stateTestDirETC,
-		legacyTestDirETC,
-	} {
+	for _, dir := range stateTestDirs() {
 		st.walk(t, dir, func(t *testing.T, name string, test *StateTest) {
 			execStateTest(t, st, test)
 		})

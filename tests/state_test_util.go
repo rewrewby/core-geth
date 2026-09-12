@@ -224,8 +224,10 @@ func (t *StateTest) checkError(subtest StateSubtest, err error) error {
 		return fmt.Errorf("unexpected error: %w", err)
 	}
 	if err != nil && expectedError != "" {
-		// Ignore expected errors (TODO MariusVanDerWijden check error string)
-		return nil
+		// Compare the stated refusal against the refusal actually raised. The
+		// post state and logs are not checked for a refusal case -- see Run --
+		// so this comparison is the only assertion such a fixture makes.
+		return matchExpectException(expectedError, err)
 	}
 	return nil
 }
