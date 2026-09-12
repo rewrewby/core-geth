@@ -7,12 +7,56 @@ site_author: Core-Geth Team
 # Repository
 repo_name: ethereumclassic/core-geth
 repo_url: https://github.com/ethereumclassic/core-geth
-edit_uri: edit/master/docs/
+edit_uri: edit/main/docs/
 
 # Copyright
-copyright: 'Copyright &copy; The go-ethereum Authors, The multi-geth Authors and The core-geth Authors. Licensed under the GNU GPL v3 and LGPL v3; see the <a href="https://github.com/ethereumclassic/core-geth/blob/master/COPYING">COPYING</a> and <a href="https://github.com/ethereumclassic/core-geth/blob/master/COPYING.LESSER">COPYING.LESSER</a> files.'
+copyright: 'Copyright &copy; The go-ethereum Authors, The multi-geth Authors and The core-geth Authors. Licensed under the GNU GPL v3 and LGPL v3; see the <a href="https://github.com/ethereumclassic/core-geth/blob/main/COPYING">COPYING</a> and <a href="https://github.com/ethereumclassic/core-geth/blob/main/COPYING.LESSER">COPYING.LESSER</a> files.'
 
 # Configuration
+# Explicit navigation. Without it mkdocs derives the menu from the file tree,
+# which buries the upgrade path a v1.12.x operator is here to find among the
+# tutorials. Ordered by what a reader needs first: install, run, upgrade.
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Command line: getting-started/run-cli.md
+  - Upgrading to v1.13.0: tutorials/v1.13.0-migration.md
+  - Guides:
+      - Private network: tutorials/private-network.md
+      - Add a network: developers/add-network.md
+  - Build and develop:
+      - Build from source: developers/build-from-source.md
+      - Testing: developers/testing.md
+      - Versioning: developers/versioning.md
+      - Documentation: developers/documentation.md
+      - Cutting a release: developers/create-new-release.md
+  - Tools:
+      - Overview: core/index.md
+      - All tools: core/alltools.md
+      - EVMC: core/evmc.md
+  - JSON-RPC API:
+      - Overview: JSON-RPC-API/index.md
+      - OpenRPC discovery: JSON-RPC-API/openrpc.md
+      - eth: JSON-RPC-API/modules/eth.md
+      - net: JSON-RPC-API/modules/net.md
+      - web3: JSON-RPC-API/modules/web3.md
+      - admin: JSON-RPC-API/modules/admin.md
+      - debug: JSON-RPC-API/modules/debug.md
+      - miner: JSON-RPC-API/modules/miner.md
+      - txpool: JSON-RPC-API/modules/txpool.md
+      - personal: JSON-RPC-API/modules/personal.md
+      - ethash: JSON-RPC-API/modules/ethash.md
+      - trace: JSON-RPC-API/modules/trace.md
+      - trace overview: JSON-RPC-API/trace-module-overview.md
+  - Audits and reports:
+      - March 2026 security audit: audits/2026-03-security-audit.md
+      - August 2026 security follow-up: audits/2026-08-security-followup.md
+      - Dependency and toolchain modernization: audits/2026-08-dependency-modernization.md
+      - Release artifacts: audits/2026-09-release-pipeline.md
+      - 2021 chain split postmortem: postmortems/2021-08-22-split-postmortem.md
+
+
 theme:
   # https://github.com/squidfunk/mkdocs-material/tree/master/src
   name: material

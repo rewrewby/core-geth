@@ -114,6 +114,14 @@ mkdocs-serve: ## Serve generated documentation (during development)
 
 docs-generate: ## Generate JSON RPC API documentation from the OpenRPC service discovery document.
 	env COREGETH_GEN_OPENRPC_DOCS=on go test -count=1 -run BuildStatic ./ethclient
+# go-openrpc-reflect hardcodes "blob/master" when it builds the source links
+# (common.go, githubURIRevision), so every regeneration reintroduces a branch
+# this repository no longer has. Repointing them here keeps the fix with the
+# step that breaks it rather than leaving 183 dead links for someone to find.
+	@grep -rl 'ethereumclassic/core-geth/blob/master' docs/ --include='*.md' 2>/dev/null \
+	  | xargs -r sed -i 's|ethereumclassic/core-geth/blob/master|ethereumclassic/core-geth/blob/main|g'
+	@n=$$(grep -rc 'ethereumclassic/core-geth/blob/master' docs/ --include='*.md' 2>/dev/null | grep -v ':0' | wc -l); \
+	  if [ "$$n" -ne 0 ]; then echo "docs-generate: $$n file(s) still reference a deleted branch"; exit 1; fi
 
 # The devtools target installs tools required for 'go generate'.
 # You need to put $GOBIN (or $GOPATH/bin) in your PATH to use 'go generate'.

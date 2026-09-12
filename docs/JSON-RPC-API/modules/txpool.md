@@ -407,7 +407,7 @@ func (s *TxPoolAPI) Content() map // Content returns the transactions contained 
 	return content
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L176" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L176" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -829,7 +829,7 @@ func (s *TxPoolAPI) ContentFrom(addr common.Address) map // ContentFrom returns 
 	return content
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L203" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L203" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -967,7 +967,7 @@ func (s *TxPoolAPI) Inspect() map // Inspect retrieves the content of the transa
 	return content
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L236" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L236" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1067,7 +1067,7 @@ func (s *TxPoolAPI) Status() map // Status returns the number of pending and que
 	return map[string]hexutil.Uint{"pending": hexutil.Uint(pending), "queued": hexutil.Uint(queue)}
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L226" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L226" target="_">View on GitHub →</a>
 </p>
 </details>
 

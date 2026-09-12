@@ -94,7 +94,7 @@ func (api *adminAPI) AddPeer(url string) (bool, error) {
 // connection at all times, even reconnecting if it is lost.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L61" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L61" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -179,7 +179,7 @@ func (api *adminAPI) AddTrustedPeer(url string) (bool, error) {
 }// AddTrustedPeer allows a remote node to always connect, even if slots are full
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L93" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L93" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -244,7 +244,7 @@ func (api *adminAPI) Datadir() string {
 }// Datadir retrieves the current data directory the node is using.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L324" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L324" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -383,7 +383,7 @@ func (api *AdminAPI) Ecbp1100(blockNr rpc.BlockNumber) (bool, error) {
 // it, use Ecbp1100Status.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_admin.go#L151" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L151" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -528,7 +528,7 @@ func (api *AdminAPI) Ecbp1100Status() ECBP1100Status {
 // exists so that state can be read without altering it.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_admin.go#L195" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L195" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -701,7 +701,7 @@ func (api *AdminAPI) ExportChain(file string, first *uint64, last *uint64) (bool
 // or a range of blocks if first and last are non-nil.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_admin.go#L46" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L46" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -816,7 +816,7 @@ func (api *AdminAPI) ImportChain(file string) (bool, error) {
 	return true, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_admin.go#L94" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L94" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -926,7 +926,7 @@ func (api *AdminAPI) MaxPeers(n int) (bool, error) {
 }// MaxPeers sets the maximum peer limit for the protocol manager and the p2p server.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_admin.go#L209" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L209" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1122,7 +1122,7 @@ func (api *adminAPI) NodeInfo() (*p2p.NodeInfo, error) {
 // protocol granularity.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L314" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L314" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1228,7 +1228,7 @@ func (api *adminAPI) PeerEvents(ctx context.Context) (*rpc.Subscription, error) 
 // node's p2p.Server
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L125" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L125" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1455,7 +1455,7 @@ func (api *adminAPI) Peers() ([ // Peers retrieves all the information we know a
 	return server.PeersInfo(), nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L304" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L304" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1540,7 +1540,7 @@ func (api *adminAPI) RemovePeer(url string) (bool, error) {
 }// RemovePeer disconnects from a remote node if the connection exists
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L77" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L77" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1627,7 +1627,7 @@ func (api *adminAPI) RemoveTrustedPeer(url string) (bool, error) {
 // does not disconnect it automatically.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L109" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L109" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1804,7 +1804,7 @@ func (api *adminAPI) StartHTTP(host *string, port *int, cors *string, apis *stri
 	return true, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L162" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L162" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1944,7 +1944,7 @@ func (api *adminAPI) StartRPC(host *string, port *int, cors *string, apis *strin
 // Deprecated: use StartHTTP instead.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L221" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L221" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2109,7 +2109,7 @@ func (api *adminAPI) StartWS(host *string, port *int, allowedOrigins *string, ap
 	return true, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L240" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L240" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2175,7 +2175,7 @@ func (api *adminAPI) StopHTTP() (bool, error) {
 }// StopHTTP shuts down the HTTP server.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L227" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L227" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2243,7 +2243,7 @@ func (api *adminAPI) StopRPC() (bool, error) {
 // Deprecated: use StopHTTP instead.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L234" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L234" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2310,7 +2310,7 @@ func (api *adminAPI) StopWS() (bool, error) {
 }// StopWS terminates all WebSocket servers.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L296" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L296" target="_">View on GitHub →</a>
 </p>
 </details>
 

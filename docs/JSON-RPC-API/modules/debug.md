@@ -371,7 +371,7 @@ func (api *DebugAPI) AccountRange(blockNrOrHash rpc.BlockNumberOrHash, start hex
 }// AccountRange enumerates all accounts in the given block and start point in paging request
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L133" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L133" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -480,7 +480,7 @@ func (*HandlerT) BlockProfile(file string, nsec uint) error {
 // desired, set the rate and write the profile manually.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L144" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L144" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -554,7 +554,7 @@ func (api *DebugAPI) ChaindbCompact() error {
 	return nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2259" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2259" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -630,7 +630,7 @@ func (api *DebugAPI) ChaindbProperty(property string) (string, error) {
 }// ChaindbProperty returns leveldb properties of the key-value database.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2253" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2253" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -739,7 +739,7 @@ func (h *HandlerT) CpuProfile(file string, nsec uint) error {
 // profile data to file.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L85" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L85" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -876,7 +876,7 @@ func (api *DebugAPI) DbAncient(kind string, number uint64) (hexutil.Bytes, error
 // It is a mapping to the `AncientReaderOp.Ancient` method
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/dbapi.go#L35" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/dbapi.go#L35" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -968,7 +968,7 @@ func (api *DebugAPI) DbAncients() (uint64, error) {
 // It is a mapping to the `AncientReaderOp.Ancients` method
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/dbapi.go#L41" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/dbapi.go#L41" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1073,7 +1073,7 @@ func (api *DebugAPI) DbGet(key string) (hexutil.Bytes, error) {
 }// DbGet returns the raw value of a key stored in the database.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/dbapi.go#L25" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/dbapi.go#L25" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1228,7 +1228,7 @@ func (s *p2pDebugAPI) DiscoveryV4Table() [][]discover.BucketNode {
 	return nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/api.go#L348" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/api.go#L348" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1529,7 +1529,7 @@ func (api *DebugAPI) DumpBlock(blockNr rpc.BlockNumber) (state.Dump, error) {
 }// DumpBlock retrieves the entire state of the database at a given block.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L50" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L50" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1586,7 +1586,7 @@ func (*HandlerT) FreeOSMemory() {
 }// FreeOSMemory forces a garbage collection.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L231" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L231" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -1756,7 +1756,7 @@ func (*HandlerT) GcStats() *debug.GCStats {
 }// GcStats returns GC statistics.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L77" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L77" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2034,7 +2034,7 @@ func (api *DebugAPI) GetAccessibleState(from, to rpc.BlockNumber) (uint64, error
 	return 0, errors.New("no state found")
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L361" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L361" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2488,7 +2488,7 @@ func (api *DebugAPI) GetBadBlocks(ctx context.Context) ([ // GetBadBlocks return
 	return results, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L104" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L104" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2684,7 +2684,7 @@ func (api *DebugAPI) GetModifiedAccountsByHash(startHash common.Hash, endHash *c
 	return api.getModifiedAccounts(startBlock, endBlock)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L298" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L298" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2880,7 +2880,7 @@ func (api *DebugAPI) GetModifiedAccountsByNumber(startNum uint64, endNum *uint64
 	return api.getModifiedAccounts(startBlock, endBlock)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L270" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L270" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -2995,7 +2995,7 @@ func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNum
 }// GetRawBlock retrieves the RLP encoded for a single block.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2170" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2170" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -3110,7 +3110,7 @@ func (api *DebugAPI) GetRawHeader(ctx context.Context, blockNrOrHash rpc.BlockNu
 }// GetRawHeader retrieves the RLP encoding for a single header.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2151" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2151" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -3244,7 +3244,7 @@ func (api *DebugAPI) GetRawReceipts(ctx context.Context, blockNrOrHash rpc.Block
 	return result, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2189" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2189" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -3380,7 +3380,7 @@ func (s *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hex
 }// GetRawTransaction returns the bytes of the transaction for the given hash.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2216" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2216" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -3448,7 +3448,7 @@ func (api *DebugAPI) GetTrieFlushInterval() (string, error) {
 }// GetTrieFlushInterval gets the current value of in-memory trie flush interval
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L437" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L437" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -3557,7 +3557,7 @@ func (h *HandlerT) GoTrace(file string, nsec uint) error {
 // trace data to file.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L132" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L132" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -3856,7 +3856,7 @@ func (api *API) IntermediateRoots(ctx context.Context, hash common.Hash, config 
 	return roots, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L514" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L514" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4322,7 +4322,7 @@ func (*HandlerT) MemStats() *runtime.MemStats {
 }// MemStats returns detailed runtime memory statistics.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L70" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L70" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4431,7 +4431,7 @@ func (*HandlerT) MutexProfile(file string, nsec uint) error {
 // desired, set the rate and write the profile manually.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L165" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L165" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4560,7 +4560,7 @@ func (api *DebugAPI) Preimage(ctx context.Context, hash common.Hash) (hexutil.By
 }// Preimage is a debug API function that returns the preimage for a sha3 hash, if known.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L88" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L88" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4665,7 +4665,7 @@ func (api *DebugAPI) PrintBlock(ctx context.Context, number uint64) (string, err
 }// PrintBlock retrieves a block and returns its pretty printed form.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2232" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2232" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4773,7 +4773,7 @@ func (api *DebugAPI) SeedHash(ctx context.Context, number uint64) (string, error
 }// SeedHash retrieves the seed hash of a block.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2241" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2241" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4868,7 +4868,7 @@ func (*HandlerT) SetBlockProfileRate(rate int) {
 // rate 0 disables block profiling.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L153" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L153" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -4996,7 +4996,7 @@ func (*HandlerT) SetGCPercent(v int) int {
 // setting. A negative value disables GC.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L237" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L237" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5089,7 +5089,7 @@ func (api *DebugAPI) SetHead(number hexutil.Uint64) {
 }// SetHead rewinds the head of the blockchain to a previous block.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/ethapi/api.go#L2279" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/ethapi/api.go#L2279" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5182,7 +5182,7 @@ func (*HandlerT) SetMutexProfileFraction(rate int) {
 }// SetMutexProfileFraction sets the rate of mutex profiling.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L174" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L174" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5264,7 +5264,7 @@ func (api *DebugAPI) SetTrieFlushInterval(interval string) error {
 // the node will flush trie after processing each block (effectively archive mode).
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L424" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L424" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5375,7 +5375,7 @@ func (api *DebugAPI) SnapshotGeneratorStatus() (map // SnapshotGeneratorStatus r
 	return result, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L448" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L448" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5478,7 +5478,7 @@ func (*HandlerT) Stacks(filter *string) string {
 	return buf.String()
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L192" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L192" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5717,7 +5717,7 @@ func (api *API) StandardTraceBadBlockToFile(ctx context.Context, hash common.Has
 	return api.standardTraceBlockToFile(ctx, block, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L577" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L577" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -5956,7 +5956,7 @@ func (api *API) StandardTraceBlockToFile(ctx context.Context, hash common.Hash, 
 	return api.standardTraceBlockToFile(ctx, block, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L504" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L504" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6040,7 +6040,7 @@ func (h *HandlerT) StartCPUProfile(file string) error {
 }// StartCPUProfile turns on CPU profiling, writing to the given file.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L95" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L95" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6124,7 +6124,7 @@ func (h *HandlerT) StartGoTrace(file string) error {
 }// StartGoTrace turns on tracing, writing to the given file.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/trace.go#L28" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/trace.go#L28" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6191,7 +6191,7 @@ func (h *HandlerT) StopCPUProfile() error {
 }// StopCPUProfile stops an ongoing CPU profile.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L116" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L116" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6258,7 +6258,7 @@ func (h *HandlerT) StopGoTrace() error {
 }// StopGoTrace stops an ongoing trace.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/trace.go#L49" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/trace.go#L49" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6560,7 +6560,7 @@ func (api *DebugAPI) StorageRangeAt(ctx context.Context, blockNrOrHash rpc.Block
 }// StorageRangeAt returns the storage at the given block height and transaction index.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/api_debug.go#L210" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_debug.go#L210" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6692,7 +6692,7 @@ func (sub *RPCDebugSubscription) Subscribe(subscriptionName RPCDebugSubscription
 // Subscriptions are not available over HTTP; they are only available over WS, IPC, and Process connections.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/openrpc.go#L250" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/openrpc.go#L250" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -6973,7 +6973,7 @@ func (api *API) TraceBadBlock(ctx context.Context, hash common.Hash, config *Tra
 	return api.traceBlock(ctx, block, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L493" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L493" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -7252,7 +7252,7 @@ func (api *API) TraceBlock(ctx context.Context, blob hexutil.Bytes, config *Trac
 	return api.traceBlock(ctx, block, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L472" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L472" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -7531,7 +7531,7 @@ func (api *API) TraceBlockByHash(ctx context.Context, hash common.Hash, config *
 	return api.traceBlock(ctx, block, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L462" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L462" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -7838,7 +7838,7 @@ func (api *API) TraceBlockByNumber(ctx context.Context, number rpc.BlockNumber, 
 	return api.traceBlock(ctx, block, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L452" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L452" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -8092,7 +8092,7 @@ func (api *API) TraceBlockFromFile(ctx context.Context, file string, config *Tra
 	return api.TraceBlock(ctx, blob, config)
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L482" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L482" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -8838,7 +8838,7 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 // Try to retrieve the specified block
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L890" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L890" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -9592,7 +9592,7 @@ func (api *API) TraceCallMany(ctx context.Context, txs [ // TraceCallMany lets y
 	return results, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L953" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L953" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -9934,7 +9934,7 @@ func (api *API) TraceChain(ctx context.Context, start, end rpc.BlockNumber, conf
 	return sub, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L228" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L228" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10174,7 +10174,7 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 // and returns them as a JSON object.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/eth/tracers/api.go#L847" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/tracers/api.go#L847" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10265,7 +10265,7 @@ func (sub *RPCDebugSubscription) Unsubscribe(id rpc.ID) error {
 }// Unsubscribe terminates an existing subscription by ID.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/node/openrpc.go#L241" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/node/openrpc.go#L241" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10360,7 +10360,7 @@ func (*HandlerT) Verbosity(level int) {
 // and source files can be raised using Vmodule.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L60" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L60" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10430,7 +10430,7 @@ func (*HandlerT) Vmodule(pattern string) error {
 // pattern syntax.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L65" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L65" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10498,7 +10498,7 @@ func (*HandlerT) WriteBlockProfile(file string) error {
 }// WriteBlockProfile writes a goroutine blocking profile to the given file.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L158" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L158" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10570,7 +10570,7 @@ func (*HandlerT) WriteMemProfile(file string) error {
 // it must be set on the command line.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L185" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L185" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -10638,7 +10638,7 @@ func (*HandlerT) WriteMutexProfile(file string) error {
 }// WriteMutexProfile writes a goroutine blocking profile to the given file.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/master/internal/debug/api.go#L178" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/internal/debug/api.go#L178" target="_">View on GitHub →</a>
 </p>
 </details>
 
