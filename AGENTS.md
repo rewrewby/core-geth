@@ -285,10 +285,19 @@ comment can drift from the SHA without anything failing, so trust the SHA.
   upstream's until this release series, directing reports to the Ethereum
   Foundation under the Foundation's PGP key; it now routes them to this
   repository's private advisories. Cite it.
-- **`geth version-check` queries go-ethereum's vulnerability feed**
-  (`cmd/geth/misccmd.go`) and prints `No vulnerabilities found` when nothing
-  matches. That feed does not track this client, so a clean result from it says
-  nothing about this client.
+- **`geth version-check` queries go-ethereum's vulnerability feed** and prints
+  `No vulnerabilities found` when nothing matches. That feed does not track this
+  client, so a clean result from it says nothing about this client.
+
+  **It used to report the opposite error, and the guard against that is load
+  bearing.** The advisories' patterns begin `Geth/` and are unanchored, and this
+  client identifies as `Core-Geth/` — which contains `Geth`. An unanchored search
+  therefore matched a substring of our own name and reported a go-ethereum
+  advisory against a release carrying the fix: measured, GETH-2024-01 at severity
+  High against `Core-Geth/v1.13.0`. `cmd/geth/version_check.go` now requires the
+  match to begin at position 0. Do not "simplify" that back to `MatchString`, and
+  do not anchor by prepending `^` to the pattern — alternation binds loosely, so
+  the anchor would apply to only the first branch.
 
 ## Boundaries
 

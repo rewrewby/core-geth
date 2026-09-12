@@ -86,7 +86,18 @@ func checkCurrent(url, current string) error {
 		if err != nil {
 			return err
 		}
-		if r.MatchString(current) {
+		// The advisories describe go-ethereum and their patterns begin "Geth/",
+		// unanchored. This client identifies as "Core-Geth/", which CONTAINS
+		// "Geth", so an unanchored search matches a substring of our own name and
+		// reports a go-ethereum advisory against a release that carries the fix.
+		// Measured: GETH-2024-01 fires against Core-Geth/v1.13.0 with severity
+		// High, while an unrelated client name matches nothing.
+		//
+		// Requiring the match to begin at position 0 removes that without
+		// weakening a real hit: a genuine go-ethereum version string starts with
+		// "Geth/". Prepending "^" to the pattern would not work -- alternation
+		// binds loosely, so the anchor would apply only to the first branch.
+		if loc := r.FindStringIndex(current); loc != nil && loc[0] == 0 {
 			allOk = false
 			fmt.Printf("## Vulnerable to %v (%v)\n\n", vuln.Uid, vuln.Name)
 			fmt.Printf("Severity: %v\n", vuln.Severity)
