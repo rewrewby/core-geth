@@ -51,6 +51,7 @@ passwordfile as argument containing the wallet password in plaintext.`,
 					utils.KeyStoreDirFlag,
 					utils.PasswordFileFlag,
 					utils.LightKDFFlag,
+					utils.MediumKDFFlag,
 				},
 				Description: `
 	core-geth wallet [options] /path/to/my/presale.wallet
@@ -106,6 +107,7 @@ Print a short summary of all accounts`,
 					utils.KeyStoreDirFlag,
 					utils.PasswordFileFlag,
 					utils.LightKDFFlag,
+					utils.MediumKDFFlag,
 				},
 				Description: `
     geth account new
@@ -131,6 +133,7 @@ password to file or expose in any other way.
 					utils.DataDirFlag,
 					utils.KeyStoreDirFlag,
 					utils.LightKDFFlag,
+					utils.MediumKDFFlag,
 				},
 				Description: `
     geth account update <address>
@@ -160,6 +163,7 @@ changing your password is only possible interactively.
 					utils.KeyStoreDirFlag,
 					utils.PasswordFileFlag,
 					utils.LightKDFFlag,
+					utils.MediumKDFFlag,
 				},
 				ArgsUsage: "<keyFile>",
 				Description: `
@@ -287,9 +291,13 @@ func accountCreate(ctx *cli.Context) error {
 	}
 	scryptN := keystore.StandardScryptN
 	scryptP := keystore.StandardScryptP
-	if cfg.Node.UseLightweightKDF {
+	switch {
+	case cfg.Node.UseLightweightKDF:
 		scryptN = keystore.LightScryptN
 		scryptP = keystore.LightScryptP
+	case cfg.Node.UseMediumKDF:
+		scryptN = keystore.MediumScryptN
+		scryptP = keystore.MediumScryptP
 	}
 
 	password := utils.GetPassPhraseWithList("Your new account is locked with a password. Please give a password. Do not forget this password.", true, 0, utils.MakePasswordList(ctx))

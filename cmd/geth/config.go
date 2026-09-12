@@ -351,9 +351,13 @@ func deprecated(field string) bool {
 func setAccountManagerBackends(conf *node.Config, am *accounts.Manager, keydir string) error {
 	scryptN := keystore.StandardScryptN
 	scryptP := keystore.StandardScryptP
-	if conf.UseLightweightKDF {
+	switch {
+	case conf.UseLightweightKDF:
 		scryptN = keystore.LightScryptN
 		scryptP = keystore.LightScryptP
+	case conf.UseMediumKDF:
+		scryptN = keystore.MediumScryptN
+		scryptP = keystore.MediumScryptP
 	}
 
 	// Assemble the supported backends

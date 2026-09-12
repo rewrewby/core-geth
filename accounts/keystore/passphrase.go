@@ -57,6 +57,19 @@ const (
 	// memory and taking approximately 1s CPU time on a modern processor.
 	StandardScryptP = 1
 
+	// MediumScryptN is the N parameter of Scrypt encryption algorithm, using 64MB
+	// memory and taking approximately 250ms CPU time on a modern processor.
+	//
+	// This sits between Standard and Light because the gap between them is a
+	// factor of 64, and a node on a small VPS that cannot afford the standard
+	// 256MB has otherwise had to drop all the way to Light. Standard remains the
+	// default; this is selected explicitly.
+	MediumScryptN = 1 << 16
+
+	// MediumScryptP is the P parameter of Scrypt encryption algorithm, matching
+	// StandardScryptP so that Medium differs from Standard in memory alone.
+	MediumScryptP = 1
+
 	// LightScryptN is the N parameter of Scrypt encryption algorithm, using 4MB
 	// memory and taking approximately 100ms CPU time on a modern processor.
 	LightScryptN = 1 << 12

@@ -278,6 +278,11 @@ var (
 		Usage:    "Reduce key-derivation RAM & CPU usage at some expense of KDF strength",
 		Category: flags.AccountCategory,
 	}
+	MediumKDFFlag = &cli.BoolFlag{
+		Name:     "mediumkdf",
+		Usage:    "Derive new keyfiles with 64MB of RAM rather than the 256MB default, for memory-constrained hosts",
+		Category: flags.AccountCategory,
+	}
 	EthRequiredBlocksFlag = &cli.StringFlag{
 		Name:     "eth.requiredblocks",
 		Usage:    "Comma separated block number-to-hash mappings to require for peering (<number>=<hash>)",
@@ -1624,6 +1629,15 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	}
 	if ctx.IsSet(LightKDFFlag.Name) {
 		cfg.UseLightweightKDF = ctx.Bool(LightKDFFlag.Name)
+	}
+	// Both asking for a weaker KDF is ambiguous about which one was meant, and
+	// silently picking either would decide a security parameter on the operator's
+	// behalf. Refuse rather than guess.
+	if ctx.Bool(LightKDFFlag.Name) && ctx.Bool(MediumKDFFlag.Name) {
+		Fatalf("Flags --%s and --%s are mutually exclusive", LightKDFFlag.Name, MediumKDFFlag.Name)
+	}
+	if ctx.IsSet(MediumKDFFlag.Name) {
+		cfg.UseMediumKDF = ctx.Bool(MediumKDFFlag.Name)
 	}
 	if ctx.IsSet(NoUSBFlag.Name) || cfg.NoUSB {
 		log.Warn("Option nousb is deprecated and USB is deactivated by default. Use --usb to enable")

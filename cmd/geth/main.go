@@ -122,6 +122,7 @@ var (
 		utils.LightMaxPeersFlag, // deprecated
 		utils.LightNoPruneFlag,  // deprecated
 		utils.LightKDFFlag,
+		utils.MediumKDFFlag,
 		utils.UltraLightServersFlag,
 		utils.UltraLightFractionFlag,
 		utils.UltraLightOnlyAnnounceFlag,

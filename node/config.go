@@ -90,6 +90,12 @@ type Config struct {
 	// scrypt KDF at the expense of security.
 	UseLightweightKDF bool `toml:",omitempty"`
 
+	// UseMediumKDF lowers the key store scrypt KDF to 64MB rather than the 4MB
+	// UseLightweightKDF asks for, so a node too small for the 256MB default does
+	// not have to give up a factor of 64 to start. Ignored when
+	// UseLightweightKDF is set.
+	UseMediumKDF bool `toml:",omitempty"`
+
 	// InsecureUnlockAllowed allows user to unlock accounts in unsafe http environment.
 	InsecureUnlockAllowed bool `toml:",omitempty"`
 
