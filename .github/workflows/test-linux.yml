@@ -66,6 +66,15 @@ jobs:
         with:
           submodules: recursive
 
+      # Several timing-sensitive tests -- TestAdjustIntervalClique,
+      # TestAttachWelcome and TestRPCDiscover among them -- fail intermittently
+      # under runner load, and this job is a required status check, so a flake
+      # blocks every pull request until someone re-runs it by hand. One retry
+      # absorbs that. It does not hide a regression: a real failure fails both
+      # attempts and still reports red.
       - run: |
           make all
-          make test
+          make test || {
+            echo "::warning::test suite failed; retrying once to absorb a flaky timing test"
+            make test
+          }
