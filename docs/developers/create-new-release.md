@@ -76,9 +76,11 @@ release such as `v1.13.0` takes the moving tag.
 
 - [ ] **A second person has reviewed** the notes, the artifact list and the
       fingerprints.
-- [ ] **For a full release, create the archive branch** — the migration guide points
-      readers at `archive-release-<version>`, and that link 404s until the branch
-      exists.
+- [ ] **For a full release, create the archive branch.** The migration guide tells
+      readers to clone `archive-release-<version>`, and points them at the releases
+      page when that clone fails. Creating the branch is what makes the documented
+      build path work. Not applicable to a release candidate; the branch is cut with
+      the full release.
 
 ## After publishing
 
