@@ -225,7 +225,7 @@ enode ID changes, so update any static-peer or trusted-peer list that names it.
 ## Contributing
 
 Contributions are welcome, and fixes of any size are useful. Fork the repository,
-make your change, and open a pull request against `master`. For anything
+make your change, and open a pull request against `main`. For anything
 substantial, open an issue first so the approach can be discussed.
 
 [CONTRIBUTING.md](.github/CONTRIBUTING.md) has the coding guidelines, the build

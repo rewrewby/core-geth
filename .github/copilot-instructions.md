@@ -17,20 +17,16 @@ which blocks a node accepts is a chain split, not a failing build.
 
 ## Branching
 
-The branch layout is mid-transition. Read it as a sequence, not a steady state.
-
-| Branch | Now | After the transition |
-|---|---|---|
-| `main` | carries the modernization work, in progress | the default branch |
-| `master` | the default branch, and the PR target `.github/CONTRIBUTING.md` names | retired |
-| `archive-etclabscore-2024-12` | the preserved pre-migration history | kept as the archive branch |
+| Branch | What it is |
+|---|---|
+| `main` | the default branch — what workflows fire on, what pull requests target, and where releases are cut |
+| `archive-etclabscore-2024-12` | the preserved pre-migration history, kept indefinitely |
 
 - `main` is cut from `archive-etclabscore-2024-12` (`7ef3ecd7a`, 2024-12-16), the
   last commit before this repository was created on 2024-12-21.
-- `main` replaces `master` as the default when the modernization is written,
-  tested, and ready to cut a release candidate — not before.
-- Changing the default branch is a repository setting and a deliberate act at that
-  moment. Do not change it incidentally and do not assume it has changed.
+- `master` was deleted when `main` became the default. Do not recreate it, and do
+  not add a `master` trigger to a workflow: it would fire on nothing. Anything
+  described elsewhere as living "on `master`" is now on the archive branch alone.
 - Confirm the branch before treating anything as current:
   `git rev-parse --abbrev-ref HEAD`.
 
@@ -104,19 +100,21 @@ GitHub Actions under `.github/workflows/` is what runs: `test-linux.yml` (lint
 plus both test suites), `evmc.yml`, `go-generate-check.yml`, `bench-*.yml`,
 `docs-deploy.yml`, `release-packages.yml`, `audit-bootnodes.yml`.
 
-Triggers are not uniform and the branch names are mid-transition. `test-linux.yml`
-fires on a push to `main`, every pull request, and dispatch. `docs-deploy.yml`
-fires on `master` or `main`, path-filtered. `evmc.yml` fires on both a push to
-`master` and a pull request targeting `master`; the three `bench-*.yml` fire on
-push to `master` only — all of those stop silently when `master` retires.
-`go-generate-check.yml` fires on every pull request, unqualified.
+Triggers are not uniform. `test-linux.yml` fires on a push to `main`, every pull
+request, and dispatch. `docs-deploy.yml` fires on a push to `main`, path-filtered
+to the docs. `evmc.yml` fires on a push to `main`, pull requests targeting `main`,
+and dispatch — it must name the default branch, because the ruleset protecting
+that branch requires its check. The three `bench-*.yml` are dispatch-only; they
+carry `timeout-minutes: 360` and have never run here, so a push trigger would
+spend hours per push on nothing. `go-generate-check.yml` fires on every pull
+request, unqualified.
 `audit-bootnodes.yml` fires on a daily schedule and on pull requests targeting
 `main` that touch `params/bootnode*`. The release and image workflows fire on a
 `v*` tag. Verify against the file.
 
 **`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` were removed
-from `main`** on 2026-08-30 and are absent here; they remain on `master` and
-the archive branch as dead CI configs, and they retire with `master`.
+from `main`** on 2026-08-30 and are absent here; they survive on the archive
+branch only, as dead CI configs kept for history rather than anything that runs.
 
 ## Layout
 
@@ -175,8 +173,8 @@ confirmation. The comment can drift from the SHA; trust the SHA.
 
 ## Facts that mislead if you do not know them
 
-- **`swarm/` was removed from `main`** on 2026-08-30; it remains on `master`
-  and the archive branch.
+- **`swarm/` was removed from `main`** on 2026-08-30; it survives on the archive
+  branch only.
 - **`sync-parity-chainspecs` was removed from the `Makefile`** — it invoked a
   script this repository does not contain, and Parity configuration support is
   not maintained past the Istanbul fork.

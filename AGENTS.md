@@ -27,23 +27,18 @@ re-ask.
 
 ## Branching
 
-The branch layout is mid-transition. Read it as a sequence, not a steady state.
-
-| Branch | Now | After the transition |
-|---|---|---|
-| `main` | carries the modernization work, in progress | the default branch |
-| `master` | the default branch, and the PR target `.github/CONTRIBUTING.md` names | retired |
-| `archive-etclabscore-2024-12` | the preserved pre-migration history | kept as the archive branch |
+| Branch | What it is |
+|---|---|
+| `main` | the default branch — what workflows fire on, what pull requests target, and where releases are cut |
+| `archive-etclabscore-2024-12` | the preserved pre-migration history, kept indefinitely |
 
 - **`main` is cut from `archive-etclabscore-2024-12`** (`7ef3ecd7a`, 2024-12-16),
   the last commit before this repository was created on 2024-12-21. The annotated
   tag `archive/etclabscore-2024-12` marks the same commit.
-- **`main` replaces `master` as the default when the modernization is written,
-  tested, and ready to cut a release candidate — not before.** Until that point
-  `master` is the default and is what contributors are directed to.
-- **Changing the default branch is a repository setting and a deliberate act at
-  that moment.** Do not change it incidentally, do not assume it has changed, and
-  re-read this table rather than recalling which branch was default.
+- **`master` was deleted when `main` became the default.** Do not recreate it, and
+  do not add a `master` trigger to a workflow: a trigger naming a branch that does
+  not exist fires on nothing and reports nothing when it stops working. Anything
+  described elsewhere as living "on `master`" is now on the archive branch alone.
 
 Confirm which branch you are on before reading anything as current:
 
@@ -142,7 +137,7 @@ was tested:
 | Fires on | Workflows |
 |---|---|
 | push to `main`, every pull request, dispatch | `test-linux.yml` — lint plus both suites |
-| push to `master` or `main`, path-filtered to the docs | `docs-deploy.yml` |
+| push to `main`, path-filtered to the docs | `docs-deploy.yml` |
 | push to `main`, pull requests targeting `main`, dispatch | `evmc.yml` |
 | dispatch only | the three `bench-*.yml` |
 | every pull request, unqualified | `go-generate-check.yml` |
@@ -166,8 +161,8 @@ stops working.
 
 **`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` were removed from
 `main`** on 2026-08-30 (`55ca851c2`, `100a0c6c7`) and are absent here. They
-remain on `master` and the archive branch — dead CI configs from before this
-repository's migration, and they retire with `master`.
+survive on the archive branch only — dead CI configs from before this
+repository's migration, kept as history rather than as anything that runs.
 
 ## Structure
 
@@ -269,7 +264,7 @@ comment can drift from the SHA without anything failing, so trust the SHA.
 ## Facts that mislead if you do not know them
 
 - **`swarm/` was removed from `main`** on 2026-08-30 (`55ca851c2`); it no longer
-  exists in this tree. It remains on `master` and the archive branch.
+  exists in this tree. It survives on the archive branch only.
 - **The `sync-parity-chainspecs` target was removed from the `Makefile`.** It
   invoked a script this repository does not contain, so it could never run, and
   Parity configuration support is not maintained past the Istanbul fork. Do not

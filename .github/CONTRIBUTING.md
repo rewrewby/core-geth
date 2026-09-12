@@ -19,11 +19,10 @@ client's own multi-network model belong here.
 
 ## Which branch
 
-Pull requests are opened against `master`, this repository's default branch.
+Pull requests are opened against `main`, this repository's default branch.
 
-A `main` branch exists and carries in-progress modernization work. It is not the
-target for contributions yet. When that work is ready for release, `main` becomes
-the default branch and this document will say so.
+`archive-etclabscore-2024-12` preserves the history from before this repository
+was created, and is not a contribution target.
 
 ## Coding guidelines
 

@@ -8,9 +8,10 @@ disagreeing, `AGENTS.md` wins.
 
 ## Before acting
 
-- **Confirm the branch first.** `main` and `master` differ, and reading the wrong
-  one returns a confident wrong answer with nothing to signal it:
-  `git rev-parse --abbrev-ref HEAD`.
+- **Confirm the branch first.** `main` is the default and carries the current
+  work; `archive-etclabscore-2024-12` preserves the pre-migration tree, and
+  reading it as current returns a confident wrong answer with nothing to signal
+  it: `git rev-parse --abbrev-ref HEAD`.
 - **Read `params/` before saying anything about chain rules.** Fork schedules are
   data in this repository. A schedule recalled from memory is a guess, and here a
   guess about consensus is a chain split.
