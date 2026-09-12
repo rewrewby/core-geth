@@ -22,6 +22,36 @@ e1379a2fe77bd30fa29833074388247e7c65416e09279f746f20de2d5cf4dfea  go1.26.6.linux
 5b6c5b556525810463b5c897b50dc7a82d6a3dc0bfaf55d990a7e9f31d6b2318  go1.26.6.windows-amd64.zip
 06dbe785743d534ef8a469dad88adf7f1b2b438507ccfef9b98e7cf8c97b4b68  go1.26.6.windows-arm64.zip
 
+# The C compiler for Linux release builds, selected explicitly rather than taken
+# from the runner image.
+#
+# A glibc-linked binary runs on its build-time glibc or newer, never older, so
+# whichever compiler builds the artifact decides which systems can start it. Taking
+# that from the build image makes it a property nobody chose: the published v1.12.x
+# Linux binaries require glibc 2.34, while the configuration that built them names a
+# 2.31 image, because the image was retired and the build moved with no change here
+# and no signal that the supported platform set had narrowed. Pinning to a specific
+# image only defers that, since images are retired on their own schedule.
+#
+# There is no build-time symptom either way. The build succeeds, the archive is
+# well-formed, and the mismatch is visible only by reading the symbol table of the
+# binary that was published.
+#
+# zig cc targets a chosen glibc directly, so the floor is stated here rather than
+# inherited. Upstream also publishes a minisign signature per artifact, which is a
+# stronger guarantee than a checksum served from the same host as the file.
+#
+# This compiler is pre-1.0 and ships breaking changes between releases. After any
+# bump, re-measure the floor of the resulting binary rather than assuming it
+# carries forward:
+#
+#   objdump -T build/bin/geth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+#
+# version:zig 0.16.0
+# https://ziglang.org/download/
+# https://ziglang.org/download/0.16.0/
+70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00  zig-x86_64-linux-0.16.0.tar.xz
+
 # version:golangci 2.13.1
 # https://github.com/golangci/golangci-lint/releases/
 # https://github.com/golangci/golangci-lint/releases/download/v2.13.1/

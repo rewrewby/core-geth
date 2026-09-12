@@ -19,6 +19,12 @@ jobs:
   build-linux:
     name: Build artifacts
     runs-on: ${{ matrix.os }}
+    # Scoped on the job rather than widening the workflow default. The two extra
+    # scopes exist only to mint and record a build attestation.
+    permissions:
+      contents: write     # action-gh-release creates the draft release
+      id-token: write     # short-lived Sigstore certificate; no key is stored
+      attestations: write # record the provenance attestation
     strategy:
       matrix:
         include:
@@ -87,45 +93,125 @@ jobs:
           restore-keys: |
             ${{ matrix.BUILD_OS_NAME }}-go-
 
-      - name: Build all packages (non ARM)
-        if: ${{ matrix.BUILD_OS_NAME != 'arm' }}
+      # The Linux release archives take their glibc floor from whatever compiler
+      # builds them. Taking it from the runner image made the artifact's minimum
+      # supported distribution a property of an image nobody chose; see the
+      # rationale with the pin in build/checksums.txt.
+      - name: Install the pinned C toolchain (Linux and ARM)
+        if: ${{ matrix.BUILD_OS_NAME == 'linux' || matrix.BUILD_OS_NAME == 'arm' }}
+        run: |
+          set -euo pipefail
+          version=$(awk '/^# version:zig /{print $3}' build/checksums.txt)
+          file="zig-x86_64-linux-${version}.tar.xz"
+          want=$(awk -v f="$file" '$2 == f {print $1}' build/checksums.txt)
+          if [ -z "$version" ] || [ -z "$want" ]; then
+            echo "no zig pin found in build/checksums.txt"
+            exit 1
+          fi
+          curl -fsSL -o "$RUNNER_TEMP/$file" "https://ziglang.org/download/${version}/${file}"
+          got=$(sha256sum < "$RUNNER_TEMP/$file" | cut -d' ' -f1)
+          if [ "$got" != "$want" ]; then
+            echo "zig checksum mismatch for $file"
+            echo "  want $want"
+            echo "  got  $got"
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/zig"
+          tar -xJf "$RUNNER_TEMP/$file" -C "$RUNNER_TEMP/zig" --strip-components=1
+          "$RUNNER_TEMP/zig/zig" version
+
+      - name: Build all packages (Linux)
+        if: ${{ matrix.BUILD_OS_NAME == 'linux' }}
+        env:
+          CC: ${{ runner.temp }}/zig/zig cc -target x86_64-linux-gnu.2.31
+          # zig writes its cache beside the sources it compiles, and the Go module
+          # cache is read-only, so the cgo build of a vendored C dependency fails
+          # with AccessDenied unless both cache directories are redirected.
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-cache
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-cache-global
+        run: make all
+
+      - name: Verify the Linux glibc floor
+        if: ${{ matrix.BUILD_OS_NAME == 'linux' }}
+        run: |
+          set -euo pipefail
+          floor=$(objdump -T build/bin/geth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)
+          echo "glibc floor: $floor"
+          # Fail the release rather than publish an archive that will not start
+          # on a system it should. 2.31 is the floor this build asks the toolchain
+          # for, so anything above it means the targeting did not take effect. The
+          # published v1.12.x binaries measured 2.34 despite naming a 2.31 build
+          # image, which is the drift this check exists to catch.
+          highest=$(printf '%s\n%s\n' "${floor#GLIBC_}" "2.31" | sort -V | tail -1)
+          if [ "$highest" != "2.31" ]; then
+            echo "floor $floor exceeds the 2.31 supported by the previous release"
+            exit 1
+          fi
+          if objdump -T build/bin/geth | grep -q '__isoc23_'; then
+            echo "__isoc23_* symbols present; the C23 redirections are back"
+            exit 1
+          fi
+
+      - name: Build all packages (macOS, Windows)
+        if: ${{ matrix.BUILD_OS_NAME != 'arm' && matrix.BUILD_OS_NAME != 'linux' }}
         id: build-non-arm-images
         run: make all
 
       - name: Build all packages (ARM)
         id: build-arm-images
         if: ${{ matrix.BUILD_OS_NAME == 'arm' }}
+        env:
+          ZIG_LOCAL_CACHE_DIR: ${{ runner.temp }}/zig-cache
+          ZIG_GLOBAL_CACHE_DIR: ${{ runner.temp }}/zig-cache-global
         run: |
-          sudo apt-get update
+          set -euo pipefail
+          ZIG="$RUNNER_TEMP/zig/zig"
 
-          sudo apt install gcc-multilib
-
-          sudo -E apt-get -yq --no-install-suggests --no-install-recommends install gcc-arm-linux-gnueabi libc6-dev-armel-cross gcc-arm-linux-gnueabihf libc6-dev-armhf-cross gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-          sudo ln -s /usr/include/asm-generic /usr/include/asm
+          # Each target names the glibc it links against, for the same reason the
+          # Linux leg does. Taken from the build image instead, every Arm floor
+          # moved to 2.34 between v1.12.20 and v1.12.21 -- from 2.28 on the 32-bit
+          # targets and from 2.17 on arm64. The values below are what v1.12.20
+          # shipped. The pinned toolchain also replaces the six cross-compiler
+          # packages this step used to install from the build image.
+          check_floor() {
+            want=$1; label=$2
+            got=$(objdump -T build/bin/geth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)
+            highest=$(printf '%s\n%s\n' "${got#GLIBC_}" "$want" | sort -V | tail -1)
+            if [ "$highest" != "$want" ]; then
+              echo "$label: glibc floor $got exceeds the $want this target is built for"
+              exit 1
+            fi
+            echo "$label: glibc floor $got"
+          }
 
           echo "arm: This archive name is deprecated and is byte-identical to"
           echo "     the arm5 archive built from the same GOARM=5 invocation."
           echo "     Use the arm5 archive; this name is kept only so an existing"
           echo "     download path does not break, and will not be kept forever."
-          GOARM=5 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabi-gcc
+          GOARM=5 go run build/ci.go install -dlgo -arch arm -cc "$ZIG cc -target arm-linux-gnueabi.2.28"
+          check_floor 2.28 arm
           env BUILD_OS_NAME=arm ./build/archive-signing.sh
 
-          GOARM=5 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabi-gcc
+          GOARM=5 go run build/ci.go install -dlgo -arch arm -cc "$ZIG cc -target arm-linux-gnueabi.2.28"
+          check_floor 2.28 arm5
           env BUILD_OS_NAME=arm5 ./build/archive-signing.sh
-          GOARM=6 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabi-gcc
+          GOARM=6 go run build/ci.go install -dlgo -arch arm -cc "$ZIG cc -target arm-linux-gnueabi.2.28"
+          check_floor 2.28 arm6
           env BUILD_OS_NAME=arm6 ./build/archive-signing.sh
-          GOARM=7 go run build/ci.go install -dlgo -arch arm -cc arm-linux-gnueabihf-gcc
+          GOARM=7 go run build/ci.go install -dlgo -arch arm -cc "$ZIG cc -target arm-linux-gnueabihf.2.28"
+          check_floor 2.28 arm7
           env BUILD_OS_NAME=arm7 ./build/archive-signing.sh
-          go run build/ci.go install -dlgo -arch arm64 -cc aarch64-linux-gnu-gcc
+          go run build/ci.go install -dlgo -arch arm64 -cc "$ZIG cc -target aarch64-linux-gnu.2.17"
+          check_floor 2.17 arm64
           env BUILD_OS_NAME=arm64 ./build/archive-signing.sh
 
       - name: Print Core-Geth version (Linux/MacOS)
         if: ${{ matrix.BUILD_OS_NAME == 'linux' || startsWith(matrix.BUILD_OS_NAME, 'osx') }}
-        run: ./build/bin/core-geth version
+        run: ./build/bin/geth version
 
       - name: Print Core-Geth version (Windows)
         if: ${{ matrix.BUILD_OS_NAME == 'win64' }}
-        run: ./build/bin/core-geth.exe version
+        run: ./build/bin/geth.exe version
 
       - name: Prepare archives for release
         if: ${{ matrix.BUILD_OS_NAME != 'arm' }}
@@ -133,7 +219,26 @@ jobs:
         env:
           BUILD_OS_NAME: ${{ matrix.BUILD_OS_NAME }}
 
+      # The two steps below publish; everything above only builds. They are
+      # therefore gated on a tag, which makes workflow_dispatch a rehearsal: the
+      # toolchain, the cross-compiles and both floor gates run, and nothing is
+      # released or recorded.
+      #
+      # The attestation gate is the load-bearing one. Provenance is written to a
+      # public append-only transparency log, so a dispatch run that minted one
+      # could not take it back — there is no such thing as a practice attestation.
+
+      # Before the upload, so a failed attestation stops publication. Provenance
+      # is bound to the run that produced the archive and cannot be added after
+      # the fact, unlike a detached signature.
+      - name: Attest the release archives
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: core-geth*.zip
+
       - name: Upload release assets
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           draft: true
