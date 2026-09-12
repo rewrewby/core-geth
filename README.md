@@ -39,7 +39,7 @@ known to have been exploited against this network. Verify your head matches anot
 before concluding otherwise:
 
 ```bash
-core-geth attach --exec 'eth.blockNumber' <datadir>/geth.ipc
+geth attach --exec 'eth.blockNumber' <datadir>/geth.ipc
 ```
 
 Compare against a block explorer or a second client. Resync only if it diverges — and if it
@@ -53,6 +53,13 @@ exposure rather than one of these CVEs.
 Full detail: the [March 2026 audit](docs/audits/2026-03-security-audit.md), the
 [August 2026 follow-up](docs/audits/2026-08-security-followup.md), and the
 [v1.13.0 migration guide](docs/tutorials/v1.13.0-migration.md).
+
+**The release artifacts were audited separately**, and that one matters before you
+download rather than after: the published `v1.12.x` Linux and Arm binaries require a
+newer glibc than the systems many operators run, and the macOS archive has contained an
+Apple Silicon binary under an architecture-free name since June 2024. See
+[release artifacts](docs/audits/2026-09-release-pipeline.md) and
+[dependency and toolchain modernization](docs/audits/2026-08-dependency-modernization.md).
 
 ---
 
@@ -120,10 +127,10 @@ selection. Do not restore it.
 ## Build
 
 ```bash
-make core-geth
+make geth
 ```
 
-The binary is written to `./build/bin/core-geth`.
+The binary is written to `./build/bin/geth`.
 
 ## Test
 
@@ -145,8 +152,8 @@ the failures look like consensus errors rather than missing files.
 ## Run a node
 
 ```bash
-./build/bin/core-geth --classic --datadir <path>     # Ethereum Classic mainnet
-./build/bin/core-geth --mordor  --datadir <path>     # Mordor testnet
+./build/bin/geth --classic --datadir <path>     # Ethereum Classic mainnet
+./build/bin/geth --mordor  --datadir <path>     # Mordor testnet
 ```
 
 `--http.addr` defaults to loopback. Do not widen it, enable `--http.corsdomain`, or add
@@ -157,13 +164,13 @@ the failures look like consensus errors rather than missing files.
 Core-Geth supports Ethash/ETChash proof-of-work mining:
 
 ```bash
-./build/bin/core-geth --classic --mine --miner.etherbase <address>
+./build/bin/geth --classic --mine --miner.etherbase <address>
 ```
 
 For testing with fake PoW, which skips DAG generation:
 
 ```bash
-./build/bin/core-geth --classic --mine --miner.etherbase <address> --fakepow
+./build/bin/geth --classic --mine --miner.etherbase <address> --fakepow
 ```
 
 ## Documentation
