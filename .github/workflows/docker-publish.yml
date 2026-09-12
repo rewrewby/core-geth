@@ -205,6 +205,22 @@ jobs:
           subject-digest: ${{ steps.published.outputs.digest }}
           push-to-registry: true
 
+      # A green attestation step means the call returned, not that the result is
+      # resolvable. Verifying by tag closes the one hop the step above cannot: that
+      # the tag a user pulls still resolves to the digest the provenance names.
+      # This runs here because the job already holds a registry credential --
+      # checking it from a workstation needs a personal token minted for the
+      # purpose, so in practice nobody would.
+      - name: Verify the attestation resolves against the published tag
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh attestation verify \
+            "oci://${{ env.REGISTRY }}/${{ github.repository }}:${{ steps.meta.outputs.version }}" \
+            --repo "${{ github.repository }}"
+        shell: bash
+
       - name: Show what was published
         run: |
           docker buildx imagetools inspect \
