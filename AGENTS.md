@@ -143,16 +143,26 @@ was tested:
 |---|---|
 | push to `main`, every pull request, dispatch | `test-linux.yml` — lint plus both suites |
 | push to `master` or `main`, path-filtered to the docs | `docs-deploy.yml` |
-| push to `master`, and pull requests targeting `master` | `evmc.yml` |
-| push to `master` only | the three `bench-*.yml` |
+| push to `main`, pull requests targeting `main`, dispatch | `evmc.yml` |
+| dispatch only | the three `bench-*.yml` |
 | every pull request, unqualified | `go-generate-check.yml` |
 | pull requests targeting `main` touching `params/bootnode*`, plus a daily schedule | `audit-bootnodes.yml` |
 | a `v*` tag | `release-packages.yml`, `docker-publish.yml` |
 
-**The `master`-only rows are a trap once `master` retires.** `evmc.yml` (both its
-push and pull-request triggers) and the three `bench-*.yml` stop firing and
-nothing reports it — the EVMC state tests would simply stop running. Move them
-with the default branch, not after it.
+**`evmc.yml` had to move with the default branch, and the reason generalizes.**
+The ruleset protecting the default branch requires this job's
+`EVMC/EVM+EWASM State Tests` check. While the workflow was scoped to `master`
+and `main` had become the default, that check could never report — so every pull
+request was unmergeable, including the one that would fix the scoping. A
+required check and the workflow producing it must name the same branch.
+
+**The three `bench-*.yml` are dispatch-only, and that is deliberate.** Their push
+trigger named `master` and was already dead once `main` became the default.
+Re-aiming it would have spent up to six hours of runner time each — they carry
+`timeout-minutes: 360` — on every push, for jobs that have never run here. Start
+one when a benchmark is the question being asked. What was rejected is leaving a
+trigger pointed at a branch that is going away, which reports nothing when it
+stops working.
 
 **`.travis.yml`, `circle.yml`, `appveyor.yml` and `Jenkinsfile` were removed from
 `main`** on 2026-08-30 (`55ca851c2`, `100a0c6c7`) and are absent here. They
@@ -203,9 +213,15 @@ one network's rules from another's.
 
 ## Version
 
-`params/version.go` is the single source: `1.13.0-unstable`, `VersionName`
-`CoreGeth`. Release tooling reads it; nothing else should hard-code a version
-string.
+`params/version.go` is the single source, and `VersionName` is `CoreGeth`.
+Release tooling reads it; nothing else should hard-code a version string —
+including this file, which quoted one and went stale at the first bump. Read the
+constants there rather than repeating them.
+
+`VersionMeta` carries the release stage and advances `unstable` → `RC1`, `RC2`,
+… → `stable`, set when each tag is cut. It must never be empty: the archive and
+version helpers branch on `!= "stable"`, so an empty value yields a malformed
+`1.13.0--<commit>` rather than a clean one.
 
 ## Dependency updates
 

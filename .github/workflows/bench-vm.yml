@@ -1,7 +1,9 @@
 name: Benchmark VM
+# On demand only. The push trigger named `master`, which is no longer the default
+# branch, so it was already dead; re-aiming it at `main` would spend up to six
+# hours of runner time per push on a job that has never been run here. Start one
+# deliberately when a benchmark is the question being asked.
 on:
-  push:
-    branches: [ master ]
   workflow_dispatch:
 
 jobs:

@@ -1,10 +1,15 @@
 name: EVMC
 
+# These follow the default branch. The ruleset protecting it requires this
+# job's "EVMC/EVM+EWASM State Tests" check, so a workflow scoped to a branch
+# that is no longer the default cannot report it and every pull request
+# deadlocks -- including the one that would fix the scoping.
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
 
