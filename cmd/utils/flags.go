@@ -973,7 +973,7 @@ var (
 	HttpHeaderFlag = &cli.StringSliceFlag{
 		Name:     "header",
 		Aliases:  []string{"H"},
-		Usage:    "Pass custom headers to the RPC server when using --" + RemoteDBFlag.Name + " or the core-geth attach console. This flag can be given multiple times.",
+		Usage:    "Pass custom headers to the RPC server when using --" + RemoteDBFlag.Name + " or the geth attach console. This flag can be given multiple times.",
 		Category: flags.APICategory,
 	}
 
@@ -2212,12 +2212,18 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		SetDNSDiscoveryDefaults(cfg, params.SepoliaGenesisHash)
 	case ctx.Bool(ClassicFlag.Name):
 		if cfg.EthDiscoveryURLs == nil {
-			cfg.EthDiscoveryURLs = []string{params.ClassicDNSNetwork1, params.ClassicDNSNetwork2}
+			cfg.EthDiscoveryURLs = []string{
+				params.ClassicDNSNetwork1, params.ClassicDNSNetwork2, params.ClassicDNSNetwork3,
+				params.OldClassicDNSNetwork1, params.OldClassicDNSNetwork2,
+			}
 			cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
 		}
 	case ctx.Bool(MordorFlag.Name):
 		if cfg.EthDiscoveryURLs == nil {
-			cfg.EthDiscoveryURLs = []string{params.MordorDNSNetwork1, params.MordorDNSNetwork2}
+			cfg.EthDiscoveryURLs = []string{
+				params.MordorDNSNetwork1, params.MordorDNSNetwork2, params.MordorDNSNetwork3,
+				params.OldMordorDNSNetwork1, params.OldMordorDNSNetwork2,
+			}
 			cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
 		}
 	default:
