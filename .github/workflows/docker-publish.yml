@@ -111,6 +111,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # Minting provenance needs an OIDC identity for the run and write access to
+      # the attestation store. Neither is implied by `packages: write`.
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -164,7 +168,11 @@ jobs:
             type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=long
+            # `type=sha` carries its own default `prefix=sha-`, and a tag-level
+            # prefix replaces the flavor-level one rather than composing with it.
+            # Without restating the variant prefix here both manifest jobs write
+            # the same `sha-<commit>` tag and whichever finishes last silently wins.
+            type=sha,format=long,prefix=${{ matrix.variant.prefix }}sha-
 
       - name: Create and push the manifest list
         working-directory: ${{ runner.temp }}/digests
@@ -173,6 +181,29 @@ jobs:
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY }}/${{ github.repository }}@sha256:%s ' *)
         shell: bash
+
+      # Provenance binds to the index digest, which is what a pull resolves to.
+      # Attesting one architecture's image would leave the manifest list -- the
+      # thing users actually reference -- carrying nothing.
+      - name: Capture the published index digest
+        id: published
+        run: |
+          digest=$(docker buildx imagetools inspect \
+            "${{ env.REGISTRY }}/${{ github.repository }}:${{ steps.meta.outputs.version }}" \
+            --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      # Gated on a tag for the same reason the archive attestation is: provenance
+      # is written to a public append-only log, so a dispatch rehearsal that minted
+      # one could not take it back.
+      - name: Attest the published image
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ github.repository }}
+          subject-digest: ${{ steps.published.outputs.digest }}
+          push-to-registry: true
 
       - name: Show what was published
         run: |
