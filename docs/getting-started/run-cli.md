@@ -92,6 +92,37 @@ $ geth --your-favourite-flags dumpconfig
 
     This works only with go-ethereum v1.6.0 and above, and with every core-geth release.*
 
+### Key derivation on a small machine
+
+Creating an account derives the keyfile's encryption key with scrypt, and the default
+parameters deliberately cost a lot of memory — that cost is what makes an offline
+guessing attack against your passphrase expensive. On a host with little RAM it can be
+too much: `geth account new` allocates around 256MB and is killed by the OOM reaper on a
+small VPS or an embedded node.
+
+Two flags lower it. They change **newly created keyfiles only** — an existing keyfile
+keeps the parameters it was written with, which are recorded inside the file itself.
+
+| Flag | scrypt `N` | Memory | Roughly |
+| --- | --- | --- | --- |
+| *(default)* | 2<sup>18</sup> | ~256MB | ~1s |
+| `--mediumkdf` | 2<sup>16</sup> | ~64MB | ~250ms |
+| `--lightkdf` | 2<sup>12</sup> | ~4MB | ~100ms |
+
+```shell
+$ geth account new --mediumkdf
+```
+
+**Prefer the default, and reach for `--mediumkdf` before `--lightkdf`.** Each step down
+divides the work an attacker must do to test a candidate passphrase: `--mediumkdf` by
+four, `--lightkdf` by sixty-four. `--lightkdf` also lowers `p`, so it is the weakest of
+the three by more than the `N` column alone suggests. The two flags are mutually
+exclusive and `geth` refuses both rather than choosing for you.
+
+None of this is a substitute for a strong passphrase. A weak one is guessable at any of
+these settings; the parameters decide how expensive each guess is, not how many guesses
+are needed.
+
 ## Command-line Options
 
 Generated from `geth --help`. The binary is authoritative; regenerate this
@@ -159,6 +190,10 @@ GLOBAL OPTIONS:
    
     --lightkdf                          (default: false)                   ($GETH_LIGHTKDF)
           Reduce key-derivation RAM & CPU usage at some expense of KDF strength
+   
+    --mediumkdf                         (default: false)                   ($GETH_MEDIUMKDF)
+          Derive new keyfiles with 64MB of RAM rather than the 256MB default, for
+          memory-constrained hosts
    
     --password value                                                       ($GETH_PASSWORD)
           Password file to use for non-interactive password input
