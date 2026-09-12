@@ -420,7 +420,7 @@ s, err := graphql.ParseSchema(schema, &q, graphql.MaxDepth(maxQueryDepth))
 
 **Impact:** Node operators running that binary were exposed to Go runtime security issues for a minimum of 19 months (August 2024 through March 2026). The Go vulnerability database lists multiple advisories against Go 1.21 in this period, including issues in the TLS stack and HTTP/2 server.
 
-**Fix:** Core-Geth v1.13.0 builds on Go 1.26 (current stable as of March 2026). The upgrade proceeded in two steps — 1.21 → 1.24 (removing the incompatible `fjl/memsize` dependency and fixing `go vet` format string errors introduced by 1.24's stricter checks), then 1.24 → 1.26 (updating all `golang.org/x/` dependencies for compatibility). The `blst` cryptography dependency was simultaneously upgraded from v0.3.11 to v0.3.16 to fix a C23 `typedef bool` incompatibility with the Alpine-based Docker build environment.
+**Fix:** Core-Geth v1.13.0 builds on Go 1.26 (current stable as of March 2026). The upgrade proceeded in two steps — 1.21 → 1.24 (removing the incompatible `fjl/memsize` dependency and fixing `go vet` format string errors introduced by 1.24's stricter checks), then 1.24 → 1.26 (updating all `golang.org/x/` dependencies for compatibility). The `blst` cryptography dependency was simultaneously upgraded from v0.3.11 to fix a C23 `typedef bool` incompatibility with the Alpine-based Docker build environment. That upgrade landed at v0.3.16 and a later dependency pass carried it to **v0.3.17**, which is what v1.13.0 ships; the header fix is present in both.
 
 **Commit:** `8385cf8e8`
 

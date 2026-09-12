@@ -247,11 +247,20 @@ same commit builds against whatever image the label currently maps to, which is
 the objection that already had every action pinned to a commit rather than a tag.
 
 That label had already moved underneath the release build. `macos-latest` now
-resolves to an Arm64 image, while every macOS archive this project has published
-was x86_64 and the archive name records no architecture. The next release would
-have published an Arm64 binary under the name Intel users download, and it would
-have looked entirely successful. The macOS build is now two entries: `osx` stays
-x86_64, and Apple Silicon publishes beside it as `osx-arm64`.
+resolves to an Arm64 image, while the archive name records no architecture, so an
+Intel user's download path silently changes what it returns. The macOS build is now
+two entries: `osx` stays x86_64, and Apple Silicon publishes beside it as
+`osx-arm64`.
+
+**Corrected 2026-09: this had already shipped, and this section originally said it
+had not.** The text here read that every published macOS archive was x86_64 and that
+the *next* release would have been the first Arm64 one. Measured directly from the
+published archives afterwards, the switch happened at **v1.12.20** (June 2024):
+`v1.12.19` contains an x86_64 binary and every release from `v1.12.20` through
+`v1.12.23` contains an Arm64 one, all four under the same architecture-free `osx`
+name. So the defect was not caught before it shipped — it had shipped four times.
+`2026-09-release-pipeline.md` carries the measurement. The remedy described above is
+unchanged and correct; only the claim about when it was caught was wrong.
 
 **Container images.** None were ever published from this repository. `build/ci.go`
 carries a complete implementation, inherited from upstream, that nothing has ever
