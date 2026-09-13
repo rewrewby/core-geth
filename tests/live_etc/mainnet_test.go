@@ -107,9 +107,12 @@ func TestETCMainnetDAOForkBlock(t *testing.T) {
 	}
 }
 
-// TestETCMainnetECBP1100Deactivated verifies ECBP-1100 (MESS) is deactivated
-// on ETC mainnet. MESS was active 11,380,000→19,250,000 (deactivated at Spiral).
-func TestETCMainnetECBP1100Deactivated(t *testing.T) {
+// TestETCMainnetECBP1100Historic checks the block at which ECBP-1110 recommended
+// shipping MESS off by default. core-geth v1.13.x ships MESS on with no deactivation
+// block, so the height is a historic marker rather than a behavioral boundary: the
+// test asserts the chain passed it and that the block is well formed, not that any
+// defense stopped there.
+func TestETCMainnetECBP1100Historic(t *testing.T) {
 	client := dialRPC(t, getETCRPC())
 	defer client.Close()
 
@@ -117,12 +120,16 @@ func TestETCMainnetECBP1100Deactivated(t *testing.T) {
 	blockNum := latest.Number.ToInt().Int64()
 
 	if blockNum < ClassicECBP1100Deactivate {
-		t.Skipf("ETC mainnet %d has not reached ECBP-1100 deactivation (%d)",
+		t.Skipf("ETC mainnet chain height %d has not reached the historic marker (%d)",
 			blockNum, ClassicECBP1100Deactivate)
 	}
 
-	t.Logf("ETC mainnet block %d is past ECBP-1100 deactivation at %d (Spiral)",
-		blockNum, ClassicECBP1100Deactivate)
+	t.Logf("ETC mainnet block %d is past the historic ECBP-1100 marker at %d", blockNum, ClassicECBP1100Deactivate)
+
+	marker := getBlockByNumber(t, client, big.NewInt(ClassicECBP1100Deactivate))
+	if marker.Difficulty == nil || marker.Difficulty.ToInt().Sign() <= 0 {
+		t.Error("historic ECBP-1100 marker block has zero difficulty")
+	}
 }
 
 // TestETCMainnetECIP1099Epoch verifies ECIP-1099 epoch calculation on live chain.

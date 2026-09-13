@@ -1,7 +1,7 @@
 {
-  "_comment": "Cross-client ETC consensus test vectors. Consumed by core-geth, besu, and fukuii.",
-  "_version": "1.0.0",
-  "_date": "2026-03-03",
+  "_comment": "Cross-client ETC consensus test vectors. core-geth checks every value against what the client declares or computes, in params/config_etc_consensus_vectors_test.go.",
+  "_version": "2.0.0",
+  "_date": "2026-09-12",
 
   "ecip1017_rewards": {
     "_comment": "ECIP-1017: 80% decay per 5M-block era (mainnet) or 2M-block era (Mordor). Uncle inclusion = 1/32 of era reward.",
@@ -18,17 +18,17 @@
   },
 
   "ecip1099_epochs": {
-    "_comment": "ECIP-1099: epoch length doubles from 30K to 60K. Classic: block 11,700,000; Mordor: block 2,520,000.",
+    "_comment": "ECIP-1099: epoch length doubles from 30K to 60K. Classic: block 11,700,000; Mordor: block 2,520,000. epoch_length is the length in force at the block. A vector without a network holds on both networks; one naming a network holds only on that network.",
     "vectors": [
       {"block": 0, "epoch_length": 30000, "expected_epoch": 0},
       {"block": 29999, "epoch_length": 30000, "expected_epoch": 0},
       {"block": 30000, "epoch_length": 30000, "expected_epoch": 1},
-      {"block": 11699999, "epoch_length": 30000, "expected_epoch": 389},
+      {"block": 11699999, "epoch_length": 30000, "expected_epoch": 389, "network": "classic"},
       {"block": 11700000, "epoch_length": 60000, "expected_epoch": 195},
       {"block": 11759999, "epoch_length": 60000, "expected_epoch": 195},
       {"block": 11760000, "epoch_length": 60000, "expected_epoch": 196},
       {"block": 2519999, "epoch_length": 30000, "expected_epoch": 83},
-      {"block": 2520000, "epoch_length": 60000, "expected_epoch": 42},
+      {"block": 2520000, "epoch_length": 60000, "expected_epoch": 42, "network": "mordor"},
       {"block": 15000000, "epoch_length": 60000, "expected_epoch": 250},
       {"block": 20000000, "epoch_length": 60000, "expected_epoch": 333}
     ]
@@ -42,8 +42,9 @@
   },
 
   "ecbp1100_windows": {
-    "classic": {"activation": 11380000, "deactivation": 19250000},
-    "mordor": {"activation": 2380000, "deactivation": 10400000}
+    "_comment": "ECBP-1100 (MESS) selects between competing chains and is not a consensus rule. These are the defaults core-geth v1.13.x ships: MESS is enabled from the activation block ECBP-1100 names and stays enabled, so deactivation is null, meaning no deactivation block rather than block 0. core-geth v1.13.x does not adopt ECBP-1110's recommendation to disable MESS by default; that is client maintainer discretion, and operators can still disable it.",
+    "classic": {"activation": 11380000, "deactivation": null},
+    "mordor": {"activation": 2380000, "deactivation": null}
   },
 
   "chain_identifiers": {
@@ -53,7 +54,7 @@
 
   "genesis_hashes": {
     "classic": "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3",
-    "mordor": "0xa68ebde7932f0bf2579b075499416f0a693de84c26b05cd01de86e60aad05ec0"
+    "mordor": "0xa68ebde7932eccb177d38d55dcc6461a019dd795a681e59b5a3e4f3a7259a3f1"
   },
 
   "fork_blocks": {

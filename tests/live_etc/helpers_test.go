@@ -22,6 +22,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -38,7 +39,9 @@ const (
 	ClassicECIP1099Block = 11_700_000
 	MordorECIP1099Block  = 2_520_000
 
-	// ECBP-1100 (MESS) activation windows
+	// ECBP-1100 (MESS) activation blocks, and the heights at which ECBP-1110
+	// recommended shipping MESS off by default. core-geth v1.13.x keeps MESS on with
+	// no deactivation block, so the *Deactivate heights are historic markers only.
 	MordorECBP1100Activate   = 2_380_000
 	MordorECBP1100Deactivate = 10_400_000
 
@@ -57,9 +60,10 @@ const (
 	EpochLengthECIP1099 = 60_000
 )
 
-// Known genesis hashes
+// Known genesis hashes. Mordor's is the one the client declares, rather than a copy of
+// it: a copy here once carried a wrong hash that nothing compared against the client.
 var (
-	MordorGenesisHash = common.HexToHash("0xa68ebde7932f0bf2579b075499416f0a693de84c26b05cd01de86e60aad05ec0")
+	MordorGenesisHash = params.MordorGenesisHash
 	ETCGenesisHash    = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
 )
 
