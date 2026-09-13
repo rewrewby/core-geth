@@ -14,11 +14,18 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Least privilege. create-pull-request opens a PR from a pushed branch, which
-# needs contents:write to push and pull-requests:write to open it.
+# Report-only. A node or tree that fails one CI runner's probe is not proof it
+# is gone, and which bootnodes and trees the client ships is a chain-configuration
+# decision for a maintainer, so the audit never edits the lists. A scheduled or
+# manual run keeps one issue current instead, which needs issues:write and nothing
+# more.
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  issues: write
+
+# Two reporting runs at once could each find no issue and open one apiece.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'report' }}
 
 jobs:
 
@@ -41,44 +48,200 @@ jobs:
           mkdir -p build/bin
           go build -o build/bin/devp2p ./cmd/devp2p
 
-      - name: Audit Bootnodes
+      - name: Audit bootnodes and DNS discovery trees
+        id: audit
         shell: bash
         run: |
-          healthcheck() {
-            enode_list="$(cat "$1" |grep -E 'enode://' | sed 's-"--g' | sed 's-\t--g'| sed 's/,.*//g')"
-            echo "$enode_list" | while read -r line; do
-              if >/dev/null 2>&1 ./build/bin/devp2p discv4 ping "${line}"; then
-                >&2 echo "PASS: ${line}"
-              else
-                echo "${line}"
-              fi
-            done
-          }
-          status=0
-          while read -r file; do
-            echo "Auditing ${file}"
-            healthcheck "${file}" | while read -r failed; do
-              echo "FAIL: ${failed}"
-              if [[ $GITHUB_EVENT_NAME != pull_request ]]; then
-                id="$(basename ${failed} | cut -d'@' -f1)"
-                sed -i '/'"${id}"'/d' "${file}"
-                gofmt -w "${file}"
-              else
-                status=1
-              fi
-            done
-          done < <(find ./params -type f -name '*bootnode*go')
-          if [[ $GITHUB_EVENT_NAME != pull_request ]]; then git --no-pager diff; fi
-          exit $status
+          set -euo pipefail
+          # Only the networks this client maintains decide the outcome: their
+          # bootnode lists and the discovery trees this project publishes. The rest
+          # is shown for information, because dead entries there would otherwise
+          # hold the issue open indefinitely. A tracked check gets three tries,
+          # because one probe from one runner is a thin basis for a report.
+          tracked_list='^(ClassicBootnodes|MordorBootnodes)$'
+          tracked_tree='^(ClassicDNSNetwork|MordorDNSNetwork)[0-9]+$'
+          lists_audited=0
+          trees_audited=0
+          : > down.tsv
 
-      - name: Create Pull Request
+          {
+            echo '## Bootnodes'
+            echo
+            echo '| List | Host | Result |'
+            echo '| --- | --- | --- |'
+          } > summary.md
+          # shellcheck disable=SC2016 # $2 and $0 below are awk fields, not shell expansions
+          while read -r list enode; do
+            attempts=1
+            if [[ $list =~ $tracked_list ]]; then
+              attempts=3
+              lists_audited=$((lists_audited + 1))
+            fi
+            result='no reply'
+            for ((i = 1; i <= attempts; i++)); do
+              if timeout 20 ./build/bin/devp2p discv4 ping "$enode" >/dev/null 2>&1; then
+                result='responds'
+                break
+              fi
+              if ((i < attempts)); then sleep 10; fi
+            done
+            echo "| ${list} | ${enode##*@} | ${result} |" >> summary.md
+            if [[ $result != responds && $list =~ $tracked_list ]]; then
+              printf 'bootnode\t%s\t%s\t%s\n' "$list" "$enode" "$result" >> down.tsv
+            fi
+          done < <(find ./params -maxdepth 1 -type f -name '*bootnode*.go' | sort | xargs -r awk '
+            /^var [A-Za-z0-9_]+ = \[\]string\{/ { list = $2; next }
+            list != "" && /^\}/ { list = ""; next }
+            list != "" && !/^[[:space:]]*\/\// && match($0, /"enode:\/\/[^"]+"/) {
+              print list, substr($0, RSTART + 1, RLENGTH - 2)
+            }')
+
+          {
+            echo
+            echo '## DNS discovery trees'
+            echo
+            echo '| Tree | Domain | Result | Nodes | Sequence | Detail |'
+            echo '| --- | --- | --- | --- | --- | --- |'
+          } >> summary.md
+          # devp2p dns sync resolves the root, verifies its signature against the
+          # key in the URL and walks every leaf, which is what a client does.
+          trees=$(mktemp -d)
+          # shellcheck disable=SC2016 # $2, $4 and $0 below are awk fields, not shell expansions
+          while read -r name url; do
+            if [[ $url == UNRESOLVED ]]; then
+              echo "::error::${name} names a prefix this audit could not find, so its URL cannot be built."
+              exit 1
+            fi
+            attempts=1
+            limit=120
+            if [[ $name =~ $tracked_tree ]]; then
+              attempts=3
+              limit=300
+              trees_audited=$((trees_audited + 1))
+            fi
+            nodes='-'
+            seq='-'
+            for ((i = 1; i <= attempts; i++)); do
+              rm -rf "${trees:?}/${name}"
+              status=0
+              timeout "$limit" ./build/bin/devp2p dns sync "$url" "${trees}/${name}" >/dev/null 2>"${trees}/${name}.err" || status=$?
+              if ((status == 0)); then
+                nodes=$(jq length "${trees}/${name}/nodes.json")
+                seq=$(jq .seq "${trees}/${name}/enrtree-info.json")
+                if ((nodes > 0)); then
+                  result='resolves'
+                  detail=''
+                else
+                  result='empty'
+                  detail='the tree lists no nodes'
+                fi
+                break
+              fi
+              # A root that resolves can still fail on a record further down, so
+              # the error line says which lookup failed rather than a verdict.
+              if ((status == 124)); then
+                result='timed out'
+                detail="no complete answer within ${limit}s"
+              else
+                result='fails'
+                detail=$(tail -n 1 "${trees}/${name}.err" | tr '|' '/' | cut -c1-160)
+              fi
+              if ((i < attempts)); then sleep 30; fi
+            done
+            echo "| ${name} | ${url##*@} | ${result} | ${nodes} | ${seq} | ${detail} |" >> summary.md
+            if [[ $result != resolves && $name =~ $tracked_tree ]]; then
+              printf 'tree\t%s\t%s\t%s\n' "$name" "$url" "${result}${detail:+: ${detail}}" >> down.tsv
+            fi
+          done < <(find ./params -maxdepth 1 -type f -name '*bootnode*.go' | sort | xargs -r awk '
+            /^var [A-Za-z0-9_]+ = "enrtree:\/\/[^"]*"/ {
+              match($0, /"enrtree:\/\/[^"]*"/); prefix[$2] = substr($0, RSTART + 1, RLENGTH - 2); next
+            }
+            /^var [A-Za-z0-9_]+DNSNetwork[0-9]+ = [A-Za-z0-9_]+ \+ "[^"]+"/ {
+              match($0, /"[^"]+"/); n++; name[n] = $2; base[n] = $4; domain[n] = substr($0, RSTART + 1, RLENGTH - 2)
+            }
+            END {
+              for (i = 1; i <= n; i++) print name[i], (base[i] in prefix ? prefix[base[i]] domain[i] : "UNRESOLVED")
+            }')
+
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+          # A parser that stopped finding entries would otherwise report every
+          # network healthy.
+          if ((lists_audited == 0)); then
+            echo "::error::No Ethereum Classic or Mordor bootnode was found to audit."
+            exit 1
+          fi
+          if ((trees_audited == 0)); then
+            echo "::error::No Ethereum Classic or Mordor DNS discovery tree was found to audit."
+            exit 1
+          fi
+          echo "down=$(wc -l < down.tsv)" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the discovery issue current
         if: github.event_name != 'pull_request'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
-        with:
-          commit-message: 'params: remove unresponsive bootnodes'
-          title: 'params: remove unresponsive bootnodes'
-          body: |
-            These bootnodes did not respond to `./build/bin/devp2p discv4 ping` requests.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOWN: ${{ steps.audit.outputs.down }}
+        run: |
+          set -euo pipefail
+          marker='<!-- audit-bootnodes -->'
+          title='Unresponsive Ethereum Classic or Mordor bootnodes or DNS trees'
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # One issue for the life of the workflow: found by the marker this step
+          # writes into its body, so a retitled issue is still found, and reopened
+          # rather than duplicated if someone closed it while problems remained.
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state all --limit 200 --json number,state,body \
+            --jq "map(select(.body | contains(\"${marker}\"))) | first | select(. != null) | \"\(.number) \(.state)\"")
+          number=${existing%% *}
+          state=${existing##* }
+          if [[ $DOWN != 0 ]]; then
+            {
+              echo "$marker"
+              echo "The daily discovery audit found problems with the bootnodes or DNS discovery trees this client ships for Ethereum Classic and Mordor. Each was tried three times from a CI runner."
+              echo
+              echo "One runner's view is not proof a node or tree is gone, and this workflow never edits the lists: changing them is a maintainer's decision."
+              if grep -q '^bootnode' down.tsv; then
+                echo
+                echo "### Bootnodes that did not answer \`devp2p discv4 ping\`"
+                echo
+                echo '| List | Host | Node ID |'
+                echo '| --- | --- | --- |'
+                while IFS=$'\t' read -r kind name target _; do
+                  [[ $kind == bootnode ]] || continue
+                  id=${target#enode://}
+                  echo "| ${name} | ${target##*@} | \`${id:0:16}…\` |"
+                done < down.tsv
+              fi
+              if grep -q '^tree' down.tsv; then
+                echo
+                echo "### DNS discovery trees that \`devp2p dns sync\` could not use"
+                echo
+                echo '| Tree | Domain | Result |'
+                echo '| --- | --- | --- |'
+                while IFS=$'\t' read -r kind name target result; do
+                  [[ $kind == tree ]] || continue
+                  echo "| ${name} | ${target##*@} | ${result} |"
+                done < down.tsv
+              fi
+              echo
+              echo "Last checked $(date -u '+%Y-%m-%d %H:%M UTC') in [run ${GITHUB_RUN_ID}](${run_url}). Each audit edits this issue in place and closes it once every tracked bootnode and tree passes."
+            } > issue.md
+            if [[ -z $existing ]]; then
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --body-file issue.md
+            else
+              if [[ $state == CLOSED ]]; then
+                gh issue reopen "$number" --repo "$GITHUB_REPOSITORY"
+              fi
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file issue.md
+            fi
+          elif [[ $state == OPEN ]]; then
+            gh issue close "$number" --repo "$GITHUB_REPOSITORY" \
+              --comment "Every tracked Ethereum Classic and Mordor bootnode and DNS discovery tree passed in [run ${GITHUB_RUN_ID}](${run_url})."
+          fi
 
-            For details: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}.
-          branch: remove-stale-bootnodes
+      - name: Fail when Ethereum Classic or Mordor discovery has a problem
+        if: steps.audit.outputs.down != '0'
+        shell: bash
+        run: |
+          echo "::error::$(wc -l < down.tsv) Ethereum Classic or Mordor bootnode or DNS tree problem(s). The job summary lists them."
+          exit 1
