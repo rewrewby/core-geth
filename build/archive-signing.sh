@@ -18,27 +18,29 @@ case "$ARCHIVE_VERSION" in
     ;;
 esac
 
+# Every archive carries COPYING, the GPL-3.0 text the binaries are distributed under, which asks
+# that recipients get a copy of the license with the program.
 GETH_ARCHIVE_NAME="core-geth-${BUILD_OS_NAME}-${ARCHIVE_VERSION}"
 ALLTOOLS_ARCHIVE_NAME="core-geth-alltools-${BUILD_OS_NAME}-${ARCHIVE_VERSION}"
 
 if [[ "${BUILD_OS_NAME}" == "win64" ]]; then
-  7z a "$GETH_ARCHIVE_NAME.zip" ./build/bin/geth.exe
+  7z a "$GETH_ARCHIVE_NAME.zip" ./build/bin/geth.exe ./COPYING
 
   sha256sum $GETH_ARCHIVE_NAME.zip
   sha256sum $GETH_ARCHIVE_NAME.zip > $GETH_ARCHIVE_NAME.zip.sha256
 
-  7z a "$ALLTOOLS_ARCHIVE_NAME.zip" ./build/bin/*
+  7z a "$ALLTOOLS_ARCHIVE_NAME.zip" ./build/bin/* ./COPYING
 
   sha256sum $ALLTOOLS_ARCHIVE_NAME.zip
   sha256sum $ALLTOOLS_ARCHIVE_NAME.zip > $ALLTOOLS_ARCHIVE_NAME.zip.sha256
 
 else
-  zip -j "$GETH_ARCHIVE_NAME.zip" build/bin/geth
+  zip -j "$GETH_ARCHIVE_NAME.zip" build/bin/geth COPYING
 
   shasum -a 256 $GETH_ARCHIVE_NAME.zip
   shasum -a 256 $GETH_ARCHIVE_NAME.zip > $GETH_ARCHIVE_NAME.zip.sha256
 
-  zip -j "$ALLTOOLS_ARCHIVE_NAME.zip" build/bin/*
+  zip -j "$ALLTOOLS_ARCHIVE_NAME.zip" build/bin/* COPYING
 
   shasum -a 256 $ALLTOOLS_ARCHIVE_NAME.zip
   shasum -a 256 $ALLTOOLS_ARCHIVE_NAME.zip > $ALLTOOLS_ARCHIVE_NAME.zip.sha256
