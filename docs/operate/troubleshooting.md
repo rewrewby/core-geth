@@ -279,12 +279,10 @@ ERROR[..] The trusted-nodes.json file is deprecated and ignored. Use P2P.Trusted
 
 ## Syncing
 
-### Are the `ERROR` and `WARN` lines during the first sync a problem?
+### Are the `WARN` lines during the first sync a problem?
 
 ```
 WARN [..] Failed to load snapshot                  err="missing or corrupted snapshot"
-ERROR[..] Expired request does not exist           peer=<peer id>
-WARN [..] Unexpected account range packet          peer=<peer id> reqid=<id>
 WARN [..] Pivot seemingly stale, moving            old=<block> new=<block>
 ```
 

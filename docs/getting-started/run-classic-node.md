@@ -113,9 +113,7 @@ INFO [09-13|08:14:01.050] Block synchronisation started
 INFO [09-13|08:14:01.515] Looking for peers                        peercount=2 tried=7 static=0
 INFO [09-13|08:14:03.224] Syncing: chain download in progress      synced=0.00% chain=884.00B headers=384@812.00B bodies=2@39.00B receipts=2@33.00B eta=165h21m12.866s
 INFO [09-13|08:14:10.350] Syncing: state download in progress      synced=0.71% state=211.50MiB accounts=610,064@152.50MiB slots=302,393@57.55MiB codes=592@1.44MiB eta=18m35.254s
-ERROR[09-13|08:14:33.783] Expired request does not exist           peer=<peer id>
 WARN [09-13|08:27:34.493] Pivot seemingly stale, moving            old=25,336,690 new=25,336,754
-WARN [09-13|08:27:34.912] Unexpected account range packet          peer=<peer id> reqid=2,019,303,366,536,694,436
 INFO [09-13|09:03:28.930] Syncing: state healing in progress       accounts=9@759.00B            slots=0@0.00B              codes=0@0.00B         nodes=573@281.61KiB pending=824
 ```
 
@@ -156,8 +154,6 @@ A first sync logs many of these. None of them stops it.
 | --- | --- | --- |
 | `Failed to load snapshot` | WARN | A new data directory has no state snapshot, so the node builds one |
 | `Engine API enabled`, `Engine API started but chain not configured for merge yet` | WARN | The Engine API starts on every node, and Ethereum Classic has no merge configured |
-| `Expired request does not exist`, `Pending request exists for joining peer` | ERROR | Consistency checks in the block downloader's request tracking; the sync carries on |
-| `Unexpected account range packet`, `Unexpected storage ranges packet`, `Unexpected bytecode packet` | WARN | A peer's reply arrived for a state request the node had already given up on |
 | `Pivot seemingly stale, moving` | WARN | The chain moved on while the state downloaded, so the node moved its sync target forward |
 | `Synchronisation failed, dropping peer` | WARN | Syncing from one peer failed, for example with `err=timeout`, and the node dropped that peer |
 

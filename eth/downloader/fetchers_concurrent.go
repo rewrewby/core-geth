@@ -229,10 +229,10 @@ func (d *Downloader) concurrentFetch(queue typedQueue, beaconMode bool) error {
 			if event.join {
 				// Sanity check the internal state; this can be dropped later
 				if _, ok := pending[peerid]; ok {
-					event.peer.log.Error("Pending request exists for joining peer")
+					event.peer.log.Debug("Pending request exists for joining peer")
 				}
 				if _, ok := stales[peerid]; ok {
-					event.peer.log.Error("Stale request exists for joining peer")
+					event.peer.log.Debug("Stale request exists for joining peer")
 				}
 				// Loop back to the entry point for task assignment
 				continue

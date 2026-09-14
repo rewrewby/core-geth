@@ -640,11 +640,11 @@ func (q *queue) ExpireReceipts(peer string) int {
 // lock is not obtained in here is that the parameters already need to access
 // the queue, so they already need a lock anyway.
 func (q *queue) expire(peer string, pendPool map[string]*fetchRequest, taskQueue interface{}) int {
-	// Retrieve the request being expired and log an error if it's non-existent,
-	// as there's no order of events that should lead to such expirations.
+	// Retrieve the request being expired. Peer churn can expire a request that was
+	// already dropped, and syncing continues, so a missing one is logged at debug level.
 	req := pendPool[peer]
 	if req == nil {
-		log.Error("Expired request does not exist", "peer", peer)
+		log.Debug("Expired request does not exist", "peer", peer)
 		return 0
 	}
 	delete(pendPool, peer)
