@@ -14,7 +14,7 @@ created from the archived development line; the other three were published in 20
 
 **Work carried out by:** [White B0x](https://whiteb0x.com)
 
-**On this page:** [Why the artifacts needed a pass of their own](#why-the-artifacts-needed-a-pass-of-their-own) · [The platform floor was lost across the v1.12.x releases](#finding-the-platform-floor-was-lost-across-the-v112x-releases) · [The macOS archive contains a binary most of its downloaders cannot run](#finding-the-macos-archive-contains-a-binary-most-of-its-downloaders-cannot-run) · [The v1.12.x line no longer builds against a C23 compiler](#finding-the-v112x-line-no-longer-builds-against-a-c23-compiler) · [The v1.12.x releases were published from outside this organization](#finding-the-v112x-releases-were-published-from-outside-this-organization) · [No container image was ever published from this repository](#finding-no-container-image-was-ever-published-from-this-repository) · [What a vulnerability scanner will say about these artifacts](#what-a-vulnerability-scanner-will-say-about-these-artifacts) · [How v1.13.0 sets its platform floor](#how-v1130-sets-its-platform-floor) · [What this means if you are upgrading](#what-this-means-if-you-are-upgrading) · [Verification](#verification) · [Outstanding](#outstanding) · [Supporting this work](#supporting-this-work)
+**On this page:** [Why the artifacts needed a pass of their own](#why-the-artifacts-needed-a-pass-of-their-own) · [The platform floor was lost across the v1.12.x releases](#finding-the-platform-floor-was-lost-across-the-v112x-releases) · [The macOS archive contains a binary most of its downloaders cannot run](#finding-the-macos-archive-contains-a-binary-most-of-its-downloaders-cannot-run) · [The v1.12.x line no longer builds against a C23 compiler](#finding-the-v112x-line-no-longer-builds-against-a-c23-compiler) · [The v1.12.x releases were published from outside this organization](#finding-the-v112x-releases-were-published-from-outside-this-organization) · [No container image was ever published from this repository](#finding-no-container-image-was-ever-published-from-this-repository) · [The release files did not identify themselves](#finding-the-release-files-did-not-identify-themselves) · [What a vulnerability scanner will say about these artifacts](#what-a-vulnerability-scanner-will-say-about-these-artifacts) · [How v1.13.0 sets its platform floor](#how-v1130-sets-its-platform-floor) · [What this means if you are upgrading](#what-this-means-if-you-are-upgrading) · [Verification](#verification) · [Outstanding](#outstanding) · [Supporting this work](#supporting-this-work)
 
 ## Why the artifacts needed a pass of their own
 
@@ -208,6 +208,26 @@ concept of one. Measured during a pipeline rehearsal, where a build named
 `pipeline-test` was published as `:latest`. A defect of this shape is invisible in
 a green pipeline and visible only in what an untagged pull returns.
 
+## Finding: the release files did not identify themselves
+
+Measured on the published `v1.12.20` archives:
+
+- **No license text.** Each archive held only its binary. The binaries are distributed under the
+  GPL-3.0 in `COPYING`, which asks that recipients get a copy of the license with the program.
+- **No version information on Windows.** `geth.exe` carried an application manifest and no version
+  resource, so its properties named no product, company or version.
+
+`v1.13.0` changes both, and adds what the images need:
+
+- Every archive carries `COPYING` beside its binaries.
+- Every Windows executable carries version information naming Core-Geth, its version, the Ethereum
+  Classic DAO LLC and the copyright holders, and a manifest that identifies the executable and runs it
+  at the caller's privilege level. The release fails if Windows reads no version information back from
+  an executable.
+- The container images name their source, version, revision, vendor and documentation in their labels,
+  and the multi-arch index carries its description, source, vendor and documentation as annotations,
+  which is where GitHub reads a multi-arch image's description from.
+
 ## What a vulnerability scanner will say about these artifacts
 
 **A scanner run against a `v1.13.0` binary reports several go-ethereum advisories
@@ -259,6 +279,10 @@ than publishing, if the artifact's floor rises above target or if the C23 symbol
 redirections that raise it reappear. The regression above shipped three times because
 nothing checked; a fix with no check is a defect waiting to recur.
 
+**macOS is set the same way.** The macOS archives target macOS 12, the oldest version Go 1.26 runs on,
+through the deployment target rather than whatever the build machine's macOS would stamp, and the
+release fails if any binary declares a different minimum.
+
 ### Why the compiler is the lever
 
 The obvious alternative (build without cgo and link statically) is not available in
@@ -299,6 +323,8 @@ Each check below was calibrated so that it could report a negative:
   2.34 attribution confirmed by listing the symbols carrying that version rather than by
   reading the maximum alone.
 - Architecture read from the Mach-O header.
+- The `v1.12.20` Windows resources read from the published `geth.exe` with Go's `debug/pe`, and each
+  archive's contents listed from the published zip.
 - The floor gates tested in both directions, against real artifacts rather than synthetic
   values: each accepts the corresponding `v1.13.0` build and the `v1.12.20` baseline, and
   each rejects the `v1.12.23` artifact for its own target.
@@ -316,24 +342,29 @@ Windows image here. The remedy does not depend on which toolchain you meet it wi
 
 ## Outstanding
 
-- **The container images carry no attestation.** The release archives do. Signing an image
-  is a separate mechanism from attesting a file, and it has not been applied here.
+- **The container images are attested, not signed.** Provenance is recorded for the published
+  image index and for each image tarball. Signing an image is a separate mechanism, and it has not
+  been applied here.
+- **The Windows and macOS binaries are not code-signed.** Windows names their publisher as unknown,
+  and macOS blocks a downloaded binary until it is allowed.
+  [Installation](../getting-started/installation.md) says how to check an archive and proceed.
 - **Container package visibility is a registry setting, not a repository one.** A registry
   creates a new package private by default, so the first published image is unreachable
   until someone makes it public, and making it public is the moment every tag it carries
   starts serving real traffic. Check what `:latest` points at before flipping it, not
   after.
-- **The container base images are floating tags**, carried forward from the dependency
-  pass, where the same objection is recorded.
+- **The container runtime base image is a floating tag**, carried forward from the dependency
+  pass, where the same objection is recorded. The builder names an exact Go patch.
 
 ## Supporting this work
 
-The release work this document records was carried out by
-[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
-Donations and retroactive grants are welcome: contact White B0x through the form at
-<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
-below, which receives on any EVM-compatible chain:
+The release work this document records was carried out by [White B0x](https://whiteb0x.com) as
+unfunded public-goods work for Ethereum Classic. Mining pools, centralized exchanges, issuers of
+Ethereum Classic financial products, Etchash mining hardware manufacturers and large holders all
+depend on this client. If your operation relies on Ethereum Classic, please help fund its
+maintenance: contact <donations@ethereumclassic.com>, or donate directly to the address below, which
+receives on any EVM-compatible chain:
 
-```
+``` { .text .copy }
 0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
 ```

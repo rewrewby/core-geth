@@ -30,9 +30,9 @@ than triggered by an incident.
 | Surface | Before | After |
 |---|---|---|
 | `go.mod` directive | `go 1.21` | `go 1.26` |
-| CI workflows | `1.21` | `1.26` |
-| Docker builder | `golang:1.22-alpine` | `golang:1.26-alpine` |
-| `build/checksums.txt` (`version:golang`) | `1.22.1` | `1.26.6` |
+| CI workflows | `1.21` | `1.26`; the release workflow `1.26.8` |
+| Docker builder | `golang:1.22-alpine` | `golang:1.26.8-alpine` |
+| `build/checksums.txt` (`version:golang`) | `1.22.1` | `1.26.8` |
 
 There is no `toolchain` directive; the `go` directive is the whole statement.
 
@@ -330,10 +330,10 @@ comparing version strings.
   required, which is what that pin needed. It remains untested: no workflow
   invokes the Debian source path, which is why its insufficiency surfaced by
   reading rather than by failing.
-- The container base images are floating tags. The builder resolves a different
-  Go patch version than `build/checksums.txt` pins for the release archives, so
-  one release ships binaries built by two toolchains, and the runtime base is
-  `latest`, which can cross a major version without any change here.
+- The container runtime base is a floating tag, `alpine:latest`, which can cross a
+  major version without any change here. The builder names the same exact Go patch
+  as `build/checksums.txt` and the release workflow, but as a tag rather than a
+  digest.
 - The `crypto/ecdh` migration for the deprecated `crypto/ecdsa` and
   `crypto/elliptic` call sites, once a secp256k1 path exists or upstream
   go-ethereum moves first. Scoped per package rather than tree-wide: the keystore
@@ -350,12 +350,13 @@ run against this repository, by hand.
 
 ## Supporting this work
 
-The modernization this document records was carried out by
-[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
-Donations and retroactive grants are welcome: contact White B0x through the form at
-<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
-below, which receives on any EVM-compatible chain:
+The modernization this document records was carried out by [White B0x](https://whiteb0x.com) as
+unfunded public-goods work for Ethereum Classic. Mining pools, centralized exchanges, issuers of
+Ethereum Classic financial products, Etchash mining hardware manufacturers and large holders all
+depend on this client. If your operation relies on Ethereum Classic, please help fund its
+maintenance: contact <donations@ethereumclassic.com>, or donate directly to the address below, which
+receives on any EVM-compatible chain:
 
-```
+``` { .text .copy }
 0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
 ```

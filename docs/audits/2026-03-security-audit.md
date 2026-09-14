@@ -505,7 +505,7 @@ The ETC network is migrating to [Fukuii](https://fukuii.org) ([github.com/fukuii
 
 - **Node operators (any v1.12.x release):** Upgrade to v1.13.0 from [github.com/ethereumclassic/core-geth](https://github.com/ethereumclassic/core-geth) immediately; it patches every CVE in this audit. Nodes on v1.12.20 or earlier are exposed to remote crash and potential key-oracle attacks from any peer.
 - **Infrastructure providers and exchanges:** Treat the upgrade to v1.13.0 as a security-critical update, not a routine version bump. Begin planning migration to Fukuii.
-- **Long-running nodes:** Consider rotating the P2P node key (`--nodekey`) as a precaution against CVE-2026-26315 oracle exposure. Any node reachable from the public internet over the 21-month gap was potentially targeted. The [migration guide](../tutorials/v1.13.0-migration.md#3-rotate-the-p2p-node-key) gives the procedure.
+- **Long-running nodes:** Consider rotating the P2P node key (`--nodekey`) as a precaution against CVE-2026-26315 oracle exposure. Any node reachable from the public internet over the 21-month gap was potentially targeted. The [migration guide](../tutorials/v1.13.0-migration.md#rotate-the-p2p-node-key) gives the procedure.
 - **Multi-client operation:** Run at minimum two independent clients for redundancy once a second client is recommended; the [migration guide](../tutorials/v1.13.0-migration.md#migrating-to-fukuii) states which, and when. Multi-client operation is what limits the blast radius of a single client going unmaintained.
 - **GraphQL endpoint:** If `--graphql` is enabled on public-facing nodes, disable it until the node runs v1.13.0, which adds the query depth limit.
 
@@ -513,13 +513,14 @@ The ETC network is migrating to [Fukuii](https://fukuii.org) ([github.com/fukuii
 
 ## Supporting this work
 
-This audit and the remediation it records were carried out by
-[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
-Donations and retroactive grants are welcome: contact White B0x through the form at
-<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
-below, which receives on any EVM-compatible chain:
+This audit and the remediation it records were carried out by [White B0x](https://whiteb0x.com) as
+unfunded public-goods work for Ethereum Classic. Mining pools, centralized exchanges, issuers of
+Ethereum Classic financial products, Etchash mining hardware manufacturers and large holders all
+depend on this client. If your operation relies on Ethereum Classic, please help fund its
+maintenance: contact <donations@ethereumclassic.com>, or donate directly to the address below, which
+receives on any EVM-compatible chain:
 
-```
+``` { .text .copy }
 0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
 ```
 

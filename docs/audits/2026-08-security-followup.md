@@ -209,13 +209,14 @@ does not resolve the toolchain exposure.
 
 ## Supporting this work
 
-This follow-up and the v1.13.0 remediation it reports were carried out by
-[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
-Donations and retroactive grants are welcome: contact White B0x through the form at
-<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
-below, which receives on any EVM-compatible chain:
+This follow-up and the v1.13.0 remediation it reports were carried out by [White
+B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic. Mining pools,
+centralized exchanges, issuers of Ethereum Classic financial products, Etchash mining hardware
+manufacturers and large holders all depend on this client. If your operation relies on Ethereum
+Classic, please help fund its maintenance: contact <donations@ethereumclassic.com>, or donate
+directly to the address below, which receives on any EVM-compatible chain:
 
-```
+``` { .text .copy }
 0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
 ```
 
