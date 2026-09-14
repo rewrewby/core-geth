@@ -226,3 +226,124 @@ jobs:
           docker buildx imagetools inspect \
             "${{ env.REGISTRY }}/${{ github.repository }}:${{ steps.meta.outputs.version }}"
         shell: bash
+
+  # Offline copies of the published images, for operators who cannot pull from the
+  # registry. Each image is pulled back by its release tag after the manifest is
+  # published and saved per architecture, so a loaded tarball's image ID is the
+  # config digest a pull of that architecture returns. Nothing is rebuilt.
+  tarballs:
+    name: Save ${{ matrix.variant.name }} ${{ matrix.platform.slug }} image
+    runs-on: ubuntu-24.04
+    needs: [merge]
+    # A dispatch run publishes no release tag to pull, and provenance cannot be
+    # withdrawn once written, so this runs for tags only.
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - name: core-geth
+            prefix: ''
+          - name: alltools
+            prefix: 'alltools-'
+        platform:
+          - name: linux/amd64
+            slug: amd64
+          - name: linux/arm64
+            slug: arm64
+
+    steps:
+      - name: Authenticate to the registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save the published image
+        id: save
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository }}:${{ matrix.variant.prefix }}${{ github.ref_name }}
+          FILE: core-geth-${{ matrix.variant.prefix }}docker-${{ matrix.platform.slug }}-${{ github.ref_name }}.tar.gz
+        run: |
+          set -euo pipefail
+          docker pull --platform "${{ matrix.platform.name }}" "$IMAGE"
+          arch=$(docker image inspect "$IMAGE" --format '{{.Architecture}}')
+          if [ "$arch" != "${{ matrix.platform.slug }}" ]; then
+            echo "pulled $arch, expected ${{ matrix.platform.slug }}"
+            exit 1
+          fi
+          docker save "$IMAGE" | gzip > "$FILE"
+          sha256sum "$FILE" > "$FILE.sha256"
+          echo "image ID $(docker image inspect "$IMAGE" --format '{{.Id}}')"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Attest the image tarball
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ steps.save.outputs.file }}
+
+      - name: Keep the tarball for the release upload
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: tarball-${{ matrix.variant.name }}-${{ matrix.platform.slug }}
+          path: ${{ steps.save.outputs.file }}*
+          if-no-files-found: error
+          retention-days: 1
+
+  # One job uploads every tarball, so parallel jobs do not race to create the
+  # release. The draft is created by release-packages.yml from the same tag, and a
+  # draft cannot be looked up by tag, so this waits for it by listing releases.
+  release-tarballs:
+    name: Attach the image tarballs to the release
+    runs-on: ubuntu-24.04
+    needs: [tarballs]
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Collect the tarballs
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          path: tarballs
+          pattern: tarball-*
+          merge-multiple: true
+
+      - name: Upload to the draft release
+        working-directory: tarballs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          id=""
+          for attempt in $(seq 1 60); do
+            id=$(gh api "repos/${{ github.repository }}/releases?per_page=30" \
+              --jq '.[] | select(.tag_name == "${{ github.ref_name }}") | .id' | head -1)
+            [ -n "$id" ] && break
+            echo "waiting for the ${{ github.ref_name }} release ($attempt)"
+            sleep 60
+          done
+          if [ -z "$id" ]; then
+            echo "no release for ${{ github.ref_name }} after 60 minutes"
+            exit 1
+          fi
+          count=0
+          for f in core-geth-*docker-*.tar.gz core-geth-*docker-*.tar.gz.sha256; do
+            gh api -X POST -H "Content-Type: application/octet-stream" \
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/$id/assets?name=$f" \
+              --input "$f" > /dev/null
+            echo "uploaded $f"
+            count=$((count + 1))
+          done
+          if [ "$count" -ne 8 ]; then
+            echo "uploaded $count files, expected 8"
+            exit 1
+          fi
+        shell: bash
