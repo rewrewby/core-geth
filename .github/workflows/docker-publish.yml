@@ -151,7 +151,9 @@ jobs:
       # `:latest` is what a bare `docker pull` resolves to, so only a full
       # release may take it. A hyphen in the tag name is the semver marker for a
       # prerelease, so v1.13.0-rc1 publishes under its own name and v1.13.0
-      # takes the moving tag.
+      # takes the moving tag. A manual run from a branch has no hyphen in its
+      # name either, so the tag check comes first: without it a dispatch from
+      # `main` would move `:latest` to an untagged build.
       #
       # This was `latest=auto`, which does NOT withhold the tag from a
       # prerelease: `auto` keys off `type=ref,event=tag` below, which has no
@@ -163,7 +165,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           flavor: |
-            latest=${{ !contains(github.ref_name, '-') }}
+            latest=${{ startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-') }}
             prefix=${{ matrix.variant.prefix }},onlatest=true
           # The trailing sha rule is always produced, including on a manual
           # run from a branch where none of the tag rules match. Without it a
