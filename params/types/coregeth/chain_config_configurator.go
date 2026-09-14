@@ -43,9 +43,18 @@ func newU64(u uint64) *uint64 {
 	return &u
 }
 
+// bigNewU64 reads a block number. A JSON chain configuration can hold one outside the uint64
+// range, and Uint64 alone keeps only its low 64 bits: 2^64+2 read as block 2, and -11380000 as
+// block 11380000. Clamped, the number keeps the meaning a comparison against a real block gives
+// it: below zero is already reached, and 2^64 or more is never reached.
 func bigNewU64(i *big.Int) *uint64 {
-	if i == nil {
+	switch {
+	case i == nil:
 		return nil
+	case i.Sign() < 0:
+		return newU64(0)
+	case !i.IsUint64():
+		return newU64(math.MaxUint64)
 	}
 	return newU64(i.Uint64())
 }
@@ -55,7 +64,10 @@ func setBig(i *big.Int, u *uint64) *big.Int {
 	if u == nil {
 		return nil
 	}
-	i = big.NewInt(int64(*u))
+	// Not big.NewInt(int64(*u)): a height above math.MaxInt64 wraps negative there and reads
+	// back as 2^64 minus itself, which is how --mess=false's math.MaxUint64-1 came to enable
+	// MESS at block 2.
+	i = new(big.Int).SetUint64(*u)
 	return i
 }
 
@@ -781,14 +793,15 @@ func (c *CoreGethChainConfig) IsEnabled(fn func() *uint64, n *big.Int) bool {
 	if f == nil || n == nil {
 		return false
 	}
+	// Heights compare unsigned, as setBig stores them; see setBig.
 	fnName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 	if strings.Contains(fnName, "ECBP1100Transition") {
 		deactivateTransition := c.GetECBP1100DeactivateTransition()
 		if deactivateTransition != nil {
-			return big.NewInt(int64(*deactivateTransition)).Cmp(n) > 0 && big.NewInt(int64(*f)).Cmp(n) <= 0
+			return new(big.Int).SetUint64(*deactivateTransition).Cmp(n) > 0 && new(big.Int).SetUint64(*f).Cmp(n) <= 0
 		}
 	}
-	return big.NewInt(int64(*f)).Cmp(n) <= 0
+	return new(big.Int).SetUint64(*f).Cmp(n) <= 0
 }
 
 func (c *CoreGethChainConfig) IsEnabledByTime(fn func() *uint64, n *uint64) bool {
@@ -1221,7 +1234,7 @@ func (c *CoreGethChainConfig) SetEthashECIP1010ContinueTransition(n *uint64) err
 		c.ECIP1010Length = new(big.Int).SetUint64(*n)
 		return nil
 	}
-	c.ECIP1010Length = new(big.Int).Sub(big.NewInt(int64(*n)), c.ECIP1010PauseBlock)
+	c.ECIP1010Length = new(big.Int).Sub(new(big.Int).SetUint64(*n), c.ECIP1010PauseBlock)
 	return nil
 }
 
@@ -1241,10 +1254,12 @@ func (c *CoreGethChainConfig) SetEthashECIP1017Transition(n *uint64) error {
 }
 
 func (c *CoreGethChainConfig) GetEthashECIP1017EraRounds() *uint64 {
-	if c.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash {
+	if c.GetConsensusEngineType() != ctypes.ConsensusEngineT_Ethash || c.ECIP1017EraRounds == nil {
 		return nil
 	}
-	return bigNewU64(c.ECIP1017EraRounds)
+	// An era length, not a block number, so not clamped by bigNewU64: a length clamped to zero
+	// would divide by zero in the reward calculation.
+	return newU64(c.ECIP1017EraRounds.Uint64())
 }
 
 func (c *CoreGethChainConfig) SetEthashECIP1017EraRounds(n *uint64) error {

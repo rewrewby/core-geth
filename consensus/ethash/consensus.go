@@ -430,7 +430,8 @@ func CalcDifficulty(config ctypes.ChainConfigurator, time uint64, parent *types.
 		// Thus the Sub-ing.
 		fakeBlockNumber := new(big.Int).Set(exPeriodRef)
 		for activated, dur := range config.GetEthashDifficultyBombDelaySchedule() {
-			if exPeriodRef.Cmp(big.NewInt(int64(activated))) < 0 {
+			// Unsigned: a key above math.MaxInt64 would wrap negative and apply from genesis.
+			if exPeriodRef.Cmp(new(big.Int).SetUint64(activated)) < 0 {
 				continue
 			}
 			fakeBlockNumber.Sub(fakeBlockNumber, dur.ToBig())
