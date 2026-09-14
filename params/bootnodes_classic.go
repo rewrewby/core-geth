@@ -22,12 +22,6 @@ var ClassicBootnodes = []string{
 	"enode://82100619a51fed73bce973a5f7ead3a9468535bdd4c87488037f99bf53b741e4701c5909b7c92897c863c23e494e27c83470a2fcbcc51f8b49655ed377dbd962@135.148.46.64:30303",   // IAD
 	"enode://d77bc6696fc2a1419871c8819baef44089cd1847b1b895266382892fd04571cc01a97c45d4df6cbe4c37004195a3c578a76e706d12548916ca5c4341768b1972@62.72.47.101:30303",    // SIN
 
-	// Not operated by this project, so these entries cannot be reissued here.
-	// Retained until the entries above are proven, then removed with the Old* DNS
-	// entries below.
-	"enode://6b6ea53a498f0895c10269a3a74b777286bd467de6425c3b512740fcc7fbc8cd281dca4ab041dd97d62b38f3d0b5b05e71f48d28a3a2f4b5de40fe1f6bf05531@157.245.77.211:30303", // AMS
-	"enode://16264d48df59c3492972d96bf8a39dd38bab165809a3a4bb161859a337de38b2959cc98efea94355c7a7177cd020867c683aed934dbd6bc937d9e6b61d94d8d9@64.225.0.245:30303",   // NYC
-	"enode://55bbc7f0ffa2af2ceca997ec195a98768144a163d389ae87b808dff8a861618405c2582451bbb6022e429e4bcd6b0e895e86160db6e93cdadbcfd80faacf6f06@164.90.144.106:30303", // SFO
 }
 
 // dnsPrefixETC signs the discovery trees this project publishes and can update.
