@@ -265,6 +265,19 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			return nil, err
 		}
 	}
+	if config.OverrideECBP1100 != nil || config.OverrideECBP1100Deactivate != nil {
+		// The chain configuration logged while the chain was opened predates these overrides
+		// and still shows the blocks they replaced. Log the ones in force.
+		block := func(n *uint64) interface{} {
+			if n == nil {
+				return "none"
+			}
+			return *n
+		}
+		log.Info("Overrode ECBP1100 (MESS) blocks in the chain configuration",
+			"activation", block(eth.blockchain.Config().GetECBP1100Transition()),
+			"deactivation", block(eth.blockchain.Config().GetECBP1100DeactivateTransition()))
+	}
 
 	if config.ECBP1100NoDisable != nil {
 		if *config.ECBP1100NoDisable {

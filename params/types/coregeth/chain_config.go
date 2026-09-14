@@ -17,6 +17,7 @@
 package coregeth
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -281,6 +282,32 @@ type CoreGethChainConfig struct {
 	RequireBlockHashes map[uint64]common.Hash `json:"requireBlockHashes"`
 
 	Lyra2NonceTransitionBlock *big.Int `json:"lyra2NonceTransitionBlock,omitempty"`
+}
+
+// UnmarshalJSON also accepts the ECBP1100 deactivation block under ecbp1100DeactivateFBlock,
+// the key its activation block's ecbp1100FBlock suggests. The field is written under
+// ecbp1100DeactivateFBlockFBlock, and a chain configuration using the shorter key had its
+// deactivation block ignored without an error. Writing keeps the longer key, which every
+// earlier version reads.
+func (c *CoreGethChainConfig) UnmarshalJSON(input []byte) error {
+	type config CoreGethChainConfig
+	dec := struct {
+		*config
+		Short *big.Int `json:"ecbp1100DeactivateFBlock"`
+		Long  *big.Int `json:"ecbp1100DeactivateFBlockFBlock"`
+	}{config: (*config)(c)}
+	if err := json.Unmarshal(input, &dec); err != nil {
+		return err
+	}
+	switch {
+	case dec.Short != nil && dec.Long != nil && dec.Short.Cmp(dec.Long) != 0:
+		return fmt.Errorf("ecbp1100DeactivateFBlock %v and ecbp1100DeactivateFBlockFBlock %v disagree", dec.Short, dec.Long)
+	case dec.Long != nil:
+		c.ECBP1100DeactivateFBlock = dec.Long
+	case dec.Short != nil:
+		c.ECBP1100DeactivateFBlock = dec.Short
+	}
+	return nil
 }
 
 // String implements the fmt.Stringer interface.

@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -26,7 +25,7 @@ func (bc *BlockChain) ArtificialFinalityNoDisable(n int32) {
 
 	if n == 1 {
 		deactivateTransition := bc.chainConfig.GetECBP1100DeactivateTransition()
-		if deactivateTransition != nil && big.NewInt(int64(*deactivateTransition)).Cmp(big.NewInt(0)) > 0 {
+		if deactivateTransition != nil {
 			// Log the activation block as well as the deactivation block.
 			// Context is nice to have for the user.
 			var logActivationBlock uint64
@@ -38,9 +37,8 @@ func (bc *BlockChain) ArtificialFinalityNoDisable(n int32) {
 				logActivationBlock = *logActivationBlockRaw
 			}
 
-			log.Warn(`Deactivate-ECBP1100 (MESS) block activation number is set together with '--ecbp1100.nodisable'.
-The --ecbp1100.nodisable feature prevents the toggling of ECBP1100 (MESS) artificial finality with its safety mechanisms of low peer count and stale head.
-ECBP1100 (MESS) is scheduled for network-wide deactivation, rendering the --ecbp1100.nodisable feature anachronistic.
+			log.Warn(`An ECBP1100 (MESS) deactivation block is set together with --mess.nodisable.
+--mess.nodisable keeps MESS on once enabled, bypassing its low-peer-count and stale-head safeguards, but MESS still stops applying at the deactivation block.
 `, "ECBP1100 activation block", logActivationBlock,
 				"ECBP1100 deactivation block", *deactivateTransition)
 		}
@@ -88,25 +86,6 @@ func (bc *BlockChain) EnableArtificialFinality(enable bool, logValues ...interfa
 // This status is agnostic of feature activation by chain configuration.
 func (bc *BlockChain) IsArtificialFinalityEnabled() bool {
 	return atomic.LoadInt32(&bc.artificialFinalityEnabledStatus) == 1
-}
-
-// getTDRatio is a helper function returning the total difficulty ratio of
-// proposed over current chain segments.
-// nolint:unused
-func (bc *BlockChain) getTDRatio(commonAncestor, current, proposed *types.Header) float64 {
-	// Get the total difficulty ratio of the proposed chain segment over the existing one.
-	commonAncestorTD := bc.GetTd(commonAncestor.Hash(), commonAncestor.Number.Uint64())
-
-	proposedParentTD := bc.GetTd(proposed.ParentHash, proposed.Number.Uint64()-1)
-	proposedTD := new(big.Int).Add(proposed.Difficulty, proposedParentTD)
-
-	localTD := bc.GetTd(current.Hash(), current.Number.Uint64())
-
-	tdRatio, _ := new(big.Float).Quo(
-		new(big.Float).SetInt(new(big.Int).Sub(proposedTD, commonAncestorTD)),
-		new(big.Float).SetInt(new(big.Int).Sub(localTD, commonAncestorTD)),
-	).Float64()
-	return tdRatio
 }
 
 // ecbp1100 implements the "MESS" artificial finality mechanism
@@ -237,49 +216,3 @@ var ecbp1100PolynomialVAmpl = big.NewInt(15)
 // ecbp1100PolynomialVHeight
 // height = CURVE_FUNCTION_DENOMINATOR * (ampl * 2)
 var ecbp1100PolynomialVHeight = new(big.Int).Mul(new(big.Int).Mul(ecbp1100PolynomialVCurveFunctionDenominator, ecbp1100PolynomialVAmpl), big2)
-
-/*
-ecbp1100AGSinusoidalA is a sinusoidal function.
-
-OPTION 3: Yet slower takeoff, yet steeper eventual ascent. Has a differentiable ceiling transition.
-h(x)=15 sin((x+12000 π)/(8000))+15+1
-*/
-func ecbp1100AGSinusoidalA(x float64) (antiGravity float64) {
-	ampl := float64(15)   // amplitude
-	pDiv := float64(8000) // period divisor
-	phaseShift := math.Pi * (pDiv * 1.5)
-	peakX := math.Pi * pDiv // x value of first sin peak where x > 0
-	if x > peakX {
-		// Cause the x value to limit to the x value of the first peak of the sin wave (ceiling).
-		x = peakX
-	}
-	return (ampl * math.Sin((x+phaseShift)/pDiv)) + ampl + 1
-}
-
-/*
-ecbp1100AGExpB is an exponential function with x as a base (and rationalized exponent).
-
-OPTION 2: Slightly slower takeoff, steeper eventual ascent
-g(x)=x^(x*0.00002)
-*/
-//nolint:deadcode,unused
-func ecbp1100AGExpB(x float64) (antiGravity float64) {
-	return math.Pow(x, x*0.00002)
-}
-
-/*
-ecbp1100AGExpA is an exponential function with x as exponent.
-
-This was (one of?) Vitalik's "original" specs:
-> 1.0001 ** (number of seconds between when S1 was received and when S2 was received)
-- https://bitcointalk.org/index.php?topic=865169.msg16349234#msg16349234
-> gravity(B') = gravity(B) * 0.99 ^ n
-- https://blog.ethereum.org/2014/11/25/proof-stake-learned-love-weak-subjectivity/
-
-OPTION 1 (Original ESS)
-f(x)=1.0001^(x)
-*/
-//nolint:unused
-func ecbp1100AGExpA(x float64) (antiGravity float64) {
-	return math.Pow(1.0001, x)
-}

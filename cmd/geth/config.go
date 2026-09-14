@@ -159,6 +159,9 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 	}
 
 	utils.SetEthConfig(ctx, stack, &cfg.Eth)
+	// Here rather than in makeFullNode, so dumpconfig writes the MESS settings the flags make
+	// and a node started from the dumped file keeps them.
+	applyMESSFlags(ctx, &cfg.Eth)
 	if ctx.IsSet(utils.EthStatsURLFlag.Name) {
 		cfg.Ethstats.URL = ctx.String(utils.EthStatsURLFlag.Name)
 	}
@@ -170,28 +173,6 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gethConfig) {
 // makeFullNode loads geth configuration and creates the Ethereum backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
-	// --mess=false is the simple off switch. It pushes activation out of reach,
-	// which is the method ECIP-1110 itself documents for disabling MESS on any
-	// version that implements it. An explicit --mess.activate wins over it.
-	if ctx.IsSet(utils.MESSFlag.Name) && !ctx.Bool(utils.MESSFlag.Name) {
-		never := uint64(math.MaxUint64 - 1)
-		cfg.Eth.OverrideECBP1100 = &never
-	}
-	if ctx.IsSet(utils.MESSActivateFlag.Name) {
-		if n := ctx.Uint64(utils.MESSActivateFlag.Name); n != math.MaxUint64 {
-			cfg.Eth.OverrideECBP1100 = &n
-		}
-	}
-	if ctx.IsSet(utils.MESSNoDisableFlag.Name) {
-		if enable := ctx.Bool(utils.MESSNoDisableFlag.Name); enable {
-			cfg.Eth.ECBP1100NoDisable = &enable
-		}
-	}
-	if ctx.IsSet(utils.MESSDeactivateFlag.Name) {
-		if n := ctx.Uint64(utils.MESSDeactivateFlag.Name); n != math.MaxUint64 {
-			cfg.Eth.OverrideECBP1100Deactivate = &n
-		}
-	}
 	if ctx.IsSet(utils.OverrideShanghai.Name) {
 		v := ctx.Uint64(utils.OverrideShanghai.Name)
 		cfg.Eth.OverrideShanghai = &v
@@ -257,6 +238,42 @@ func makeFullNode(ctx *cli.Context) (*node.Node, ethapi.Backend) {
 		}
 	}
 	return stack, backend
+}
+
+// applyMESSFlags carries the ECBP-1100 (MESS) flags into the Ethereum service
+// configuration, which applies them to the chain configuration when it starts.
+func applyMESSFlags(ctx *cli.Context, cfg *ethconfig.Config) {
+	// --mess=false is the simple off switch. It pushes activation out of reach,
+	// which is the method ECIP-1110 itself documents for disabling MESS on any
+	// version that implements it. An explicit --mess.activate wins over it.
+	if ctx.IsSet(utils.MESSFlag.Name) {
+		if !ctx.Bool(utils.MESSFlag.Name) {
+			never := uint64(math.MaxUint64 - 1)
+			cfg.OverrideECBP1100 = &never
+		} else if v := cfg.OverrideECBP1100; v != nil && *v == math.MaxUint64-1 {
+			// An explicit --mess undoes the off switch a config file dumped with
+			// --mess=false carries, so the bundled activation applies again.
+			cfg.OverrideECBP1100 = nil
+		}
+	}
+	// Every block number given is applied, math.MaxUint64 included. These flags have no
+	// default, so math.MaxUint64 no longer stands for "not set"; IsSet answers that.
+	if ctx.IsSet(utils.MESSActivateFlag.Name) {
+		n := ctx.Uint64(utils.MESSActivateFlag.Name)
+		cfg.OverrideECBP1100 = &n
+	}
+	if ctx.IsSet(utils.MESSNoDisableFlag.Name) {
+		if enable := ctx.Bool(utils.MESSNoDisableFlag.Name); enable {
+			cfg.ECBP1100NoDisable = &enable
+		} else {
+			// An explicit --mess.nodisable=false undoes a config file's setting.
+			cfg.ECBP1100NoDisable = nil
+		}
+	}
+	if ctx.IsSet(utils.MESSDeactivateFlag.Name) {
+		n := ctx.Uint64(utils.MESSDeactivateFlag.Name)
+		cfg.OverrideECBP1100Deactivate = &n
+	}
 }
 
 // dumpConfig is the dumpconfig command.

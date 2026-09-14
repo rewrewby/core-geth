@@ -21,11 +21,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -144,17 +147,36 @@ func (api *AdminAPI) ImportChain(file string) (bool, error) {
 }
 
 // Ecbp1100 sets the ECBP-1100 (MESS) activation block and reports whether the
-// mechanism is active afterwards.
+// mechanism is active afterwards. The block is a height, or "latest" or "pending",
+// which both mean the current head; "finalized" and "safe" are refused.
 //
 // This mutates chain configuration. To read the current state without changing
 // it, use Ecbp1100Status.
 func (api *AdminAPI) Ecbp1100(blockNr rpc.BlockNumber) (bool, error) {
-	i := uint64(blockNr.Int64())
-	err := api.eth.blockchain.Config().SetECBP1100Transition(&i)
+	i, err := ecbp1100ActivationBlock(blockNr, api.eth.blockchain.CurrentBlock().Number.Uint64())
+	if err != nil {
+		return false, err
+	}
+	err = api.eth.blockchain.Config().SetECBP1100Transition(&i)
 	return api.eth.blockchain.IsArtificialFinalityEnabled() &&
 		api.eth.blockchain.Config().IsEnabled(
 			api.eth.blockchain.Config().GetECBP1100Transition,
 			api.eth.blockchain.CurrentBlock().Number), err
+}
+
+// ecbp1100ActivationBlock resolves the block Ecbp1100 was given. A tag such as "latest"
+// arrives as a negative rpc.BlockNumber, and read as a height it lands beyond any chain,
+// which would quietly mean "never". The tags that name the chain head resolve to it; the
+// tags this chain has no height for are refused.
+func ecbp1100ActivationBlock(blockNr rpc.BlockNumber, head uint64) (uint64, error) {
+	switch {
+	case blockNr >= 0:
+		return uint64(blockNr), nil
+	case blockNr == rpc.LatestBlockNumber, blockNr == rpc.PendingBlockNumber:
+		return head, nil
+	default:
+		return 0, fmt.Errorf("ecbp1100: %v does not name a block to activate at", blockNr)
+	}
 }
 
 // ECBP1100Status reports whether the ECBP-1100 (MESS) chain-selection defense is
@@ -166,24 +188,29 @@ func (api *AdminAPI) Ecbp1100(blockNr rpc.BlockNumber) (bool, error) {
 // client and available to any operator who enables it. So a height configured
 // under ECBP-1110 disables MESS by default at that block rather than
 // deactivating it, and the two are not the same claim.
+//
+// Block numbers are hex quantities, as elsewhere in the JSON-RPC API. As JSON numbers they
+// lost precision in JavaScript: the console showed --mess=false's activation block,
+// 18446744073709551614, as 18446744073709552000.
 type ECBP1100Status struct {
 	// Enabled reports whether MESS is presently applied to reorganization
 	// decisions. It requires both that the node switch is on and that the head
 	// has reached the activation block.
 	Enabled bool `json:"enabled"`
-	// NodeSwitch reports the node-level setting alone, which --mess=false and
-	// the low-peer-count safeguard both turn off, independent of any height.
+	// NodeSwitch reports the node-level setting alone, which the low-peer-count and
+	// stale-head safeguards turn off, independent of any height. --mess=false does not
+	// touch it: it moves the activation block out of reach instead.
 	NodeSwitch bool `json:"nodeSwitch"`
 	// ActivatedAtBlock is the height from which the mechanism is available,
 	// per ECBP-1100. Nil when unset.
-	ActivatedAtBlock *uint64 `json:"activatedAtBlock"`
+	ActivatedAtBlock *hexutil.Uint64 `json:"activatedAtBlock"`
 	// DefaultDisabledAtBlock is the height from which the bundled default is
 	// off, per ECBP-1110. Nil means the shipped default stays on, which is this
 	// client's configuration; a non-nil value disables MESS by default at that
 	// height without removing it.
-	DefaultDisabledAtBlock *uint64 `json:"defaultDisabledAtBlock"`
+	DefaultDisabledAtBlock *hexutil.Uint64 `json:"defaultDisabledAtBlock"`
 	// Head is the block number the heights above were evaluated against.
-	Head uint64 `json:"head"`
+	Head hexutil.Uint64 `json:"head"`
 }
 
 // Ecbp1100Status reports the ECBP-1100 (MESS) state at the current head and
@@ -193,15 +220,17 @@ type ECBP1100Status struct {
 // block it is passed, so it cannot be used to observe a running node. This
 // exists so that state can be read without altering it.
 func (api *AdminAPI) Ecbp1100Status() ECBP1100Status {
-	config := api.eth.blockchain.Config()
-	head := api.eth.blockchain.CurrentBlock().Number
-	nodeSwitch := api.eth.blockchain.IsArtificialFinalityEnabled()
+	return ecbp1100Status(api.eth.blockchain.Config(), api.eth.blockchain.CurrentBlock().Number,
+		api.eth.blockchain.IsArtificialFinalityEnabled())
+}
+
+func ecbp1100Status(config ctypes.ChainConfigurator, head *big.Int, nodeSwitch bool) ECBP1100Status {
 	return ECBP1100Status{
 		Enabled:                nodeSwitch && config.IsEnabled(config.GetECBP1100Transition, head),
 		NodeSwitch:             nodeSwitch,
-		ActivatedAtBlock:       config.GetECBP1100Transition(),
-		DefaultDisabledAtBlock: config.GetECBP1100DeactivateTransition(),
-		Head:                   head.Uint64(),
+		ActivatedAtBlock:       (*hexutil.Uint64)(config.GetECBP1100Transition()),
+		DefaultDisabledAtBlock: (*hexutil.Uint64)(config.GetECBP1100DeactivateTransition()),
+		Head:                   hexutil.Uint64(head.Uint64()),
 	}
 }
 
