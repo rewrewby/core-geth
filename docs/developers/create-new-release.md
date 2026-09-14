@@ -47,8 +47,8 @@ wrong, cut the next one.
 
 | Workflow | Produces |
 | --- | --- |
-| `release-packages.yml` | 18 archives: 9 platforms × (`geth`, `alltools`), each with a `.sha256`, plus a build attestation, uploaded to a **draft** release |
-| `docker-publish.yml` | multi-architecture images for `linux/amd64` and `linux/arm64`, pushed to GHCR, then the images saved as four `.tar.gz` files, each with a `.sha256` and a build attestation, attached to the draft release |
+| `release-packages.yml` | 18 archives: 9 platforms × (`geth`, `alltools`), each with a `.sha256` and a build attestation. A single publish job uploads all of them to one **draft** release once every build has finished |
+| `docker-publish.yml` | multi-architecture images for `linux/amd64` and `linux/arm64`, pushed to GHCR, then the images saved as four `.tar.gz` files, each with a `.sha256` and a build attestation, attached to the draft release. It waits for that draft, and stops if more than one release carries the tag |
 
 A tag whose name contains a hyphen is treated as a prerelease: the GitHub release is
 marked as one, and the container image does **not** take `:latest`. Only a full

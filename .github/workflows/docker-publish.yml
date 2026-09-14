@@ -336,10 +336,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          # Exactly one release may carry the tag. Taking the first of several put
+          # the tarballs on a duplicate draft once, so more than one stops here.
           id=""
           for attempt in $(seq 1 60); do
-            id=$(gh api "repos/${{ github.repository }}/releases?per_page=30" \
-              --jq '.[] | select(.tag_name == "${{ github.ref_name }}") | .id' | head -1)
+            ids=$(gh api "repos/${{ github.repository }}/releases?per_page=30" \
+              --jq '.[] | select(.tag_name == "${{ github.ref_name }}") | .id')
+            if [ "$(printf '%s\n' "$ids" | grep -c .)" -gt 1 ]; then
+              echo "more than one release carries ${{ github.ref_name }}: $(echo $ids)"
+              exit 1
+            fi
+            id=$ids
             [ -n "$id" ] && break
             echo "waiting for the ${{ github.ref_name }} release ($attempt)"
             sleep 60

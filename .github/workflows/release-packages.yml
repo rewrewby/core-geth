@@ -6,10 +6,10 @@ on:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
 
-# Least privilege. action-gh-release creates a draft release, which needs
-# contents:write. Nothing here needs any other scope.
+# Least privilege. Only the publish job writes: action-gh-release creates the
+# draft release there, which needs contents:write.
 permissions:
-  contents: write
+  contents: read
 
 defaults:
   run:
@@ -22,7 +22,7 @@ jobs:
     # Scoped on the job rather than widening the workflow default. The two extra
     # scopes exist only to mint and record a build attestation.
     permissions:
-      contents: write     # action-gh-release creates the draft release
+      contents: read      # check out the source
       id-token: write     # short-lived Sigstore certificate; no key is stored
       attestations: write # record the provenance attestation
     strategy:
@@ -275,8 +275,48 @@ jobs:
         with:
           subject-path: core-geth*.zip
 
+      # The archives go to the publish job rather than to the release. Each build
+      # leg creating the draft itself raced: two legs that reached the upload
+      # before any draft existed each created one, and the release was split
+      # across two drafts. Runs on a rehearsal too, so a rehearsal tests it.
+      - name: Keep the archives for the publish job
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-archives-${{ matrix.BUILD_OS_NAME }}
+          path: core-geth*.zip*
+          if-no-files-found: error
+          compression-level: 0 # the archives are already compressed
+          retention-days: 1
+
+  publish:
+    name: Upload the release assets
+    needs: build-linux
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    # The only job that writes to the release, in a single call, so exactly one
+    # draft exists and it receives every archive or none.
+    permissions:
+      contents: write
+    steps:
+      - name: Collect the archives
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          pattern: release-archives-*
+          merge-multiple: true
+
+      # 9 platforms, each a geth and an alltools archive with its checksum.
+      - name: Check every archive arrived
+        run: |
+          set -euo pipefail
+          archives=$(ls core-geth*.zip | wc -l)
+          checksums=$(ls core-geth*.zip.sha256 | wc -l)
+          echo "$archives archives, $checksums checksums"
+          if [ "$archives" -ne 18 ] || [ "$checksums" -ne 18 ]; then
+            echo "expected 18 archives and 18 checksums"
+            exit 1
+          fi
+
       - name: Upload release assets
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           draft: true
