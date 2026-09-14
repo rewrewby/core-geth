@@ -42,15 +42,3 @@ var dnsPrefixETC = "enrtree://APDLRZ2T7ERXPWXX4D5USB32NIFYHXMFVZQ3DZALK6JJJ5L4VS
 var ClassicDNSNetwork1 = dnsPrefixETC + "all.classic.ethereumclassic.net"
 var ClassicDNSNetwork2 = dnsPrefixETC + "all.classic.ethclassic.net"
 var ClassicDNSNetwork3 = dnsPrefixETC + "all.classic.ethereumclassic.network"
-
-// Signed by a key this project does not hold, so the trees behind these names
-// cannot be updated here. Carried so no node loses discovery during the
-// transition. This block and the Old* entries in cmd/utils/flags.go are deleted
-// together once this project's own bootnodes are live and proven.
-//
-// Deliberately not marked Deprecated: cmd/utils/flags.go names these on purpose,
-// and that marker would tell every consumer the opposite.
-var oldDNSPrefixETC = "enrtree://AJE62Q4DUX4QMMXEHCSSCSC65TDHZYSMONSD64P3WULVLSF6MRQ3K@"
-
-var OldClassicDNSNetwork1 = oldDNSPrefixETC + "all.classic.blockd.info"
-var OldClassicDNSNetwork2 = oldDNSPrefixETC + "all.classic.etcdisco.net"

@@ -10,7 +10,7 @@ useful peer for others, and how the network's discovery lists are built and publ
 | Source | Set by | Default on Ethereum Classic and Mordor |
 |---|---|---|
 | Bootnodes | `--bootnodes` | The list compiled into the client, in `params/bootnodes_classic.go` and `params/bootnodes_mordor.go` |
-| DNS discovery trees | `--discovery.dns` | The trees in the same files: `ClassicDNSNetwork1` to `3` or `MordorDNSNetwork1` to `3`, plus older trees kept under `oldDNSPrefixETC` |
+| DNS discovery trees | `--discovery.dns` | The trees in the same files: `ClassicDNSNetwork1` to `3` or `MordorDNSNetwork1` to `3` |
 | Discovery v4 | `--discovery.v4` | On |
 | Discovery v5 | `--discovery.v5` | Off |
 | Static and trusted peers | `[Node.P2P]` in the config file, or `admin_addPeer` | None |

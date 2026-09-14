@@ -2260,7 +2260,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		if cfg.EthDiscoveryURLs == nil {
 			cfg.EthDiscoveryURLs = []string{
 				params.ClassicDNSNetwork1, params.ClassicDNSNetwork2, params.ClassicDNSNetwork3,
-				params.OldClassicDNSNetwork1, params.OldClassicDNSNetwork2,
 			}
 			cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
 		}
@@ -2268,7 +2267,6 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		if cfg.EthDiscoveryURLs == nil {
 			cfg.EthDiscoveryURLs = []string{
 				params.MordorDNSNetwork1, params.MordorDNSNetwork2, params.MordorDNSNetwork3,
-				params.OldMordorDNSNetwork1, params.OldMordorDNSNetwork2,
 			}
 			cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
 		}

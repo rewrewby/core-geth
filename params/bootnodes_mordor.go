@@ -40,8 +40,3 @@ var MordorBootnodes = []string{
 var MordorDNSNetwork1 = dnsPrefixETC + "all.mordor.ethereumclassic.net"
 var MordorDNSNetwork2 = dnsPrefixETC + "all.mordor.ethclassic.net"
 var MordorDNSNetwork3 = dnsPrefixETC + "all.mordor.ethereumclassic.network"
-
-// Retained for the reason given with oldDNSPrefixETC in bootnodes_classic.go,
-// and deleted with that block rather than before it.
-var OldMordorDNSNetwork1 = oldDNSPrefixETC + "all.mordor.blockd.info"
-var OldMordorDNSNetwork2 = oldDNSPrefixETC + "all.mordor.etcdisco.net"
