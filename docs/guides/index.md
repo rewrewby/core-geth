@@ -6,7 +6,7 @@ Find the pages for what you run core-geth for.
 
 | You are | Start with | Then |
 |---|---|---|
-| Running a node for yourself or a wallet | [Installation](../getting-started/installation.md) | [Run an Ethereum Classic node](../getting-started/run-classic-node.md), [Security](../operate/security.md) |
+| Running a node for yourself or a wallet | [Installation](../getting-started/installation.md) | [Running a node](../getting-started/run-a-node.md), [Security](../operate/security.md) |
 | Upgrading from v1.12.x | [Migration guide](../tutorials/v1.13.0-migration.md) | [Maintenance, backup and upgrades](../operate/maintenance.md) |
 | An exchange or custodian | [Production operations](production-operations.md) | [MESS confirmation calculator](mess-calculator.md), [Monitoring](../operate/monitoring.md) |
 | A solo miner | [Mining](mining.md) | [Security](../operate/security.md) |

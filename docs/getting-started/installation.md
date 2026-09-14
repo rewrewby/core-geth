@@ -53,8 +53,8 @@ executable by that name.
 Every archive route ends with a `geth` on your `PATH`. Archives are attached to each
 tagged release on the
 [releases page](https://github.com/ethereumclassic/core-geth/releases), and every one
-of them is a `.zip` containing the binary at the top level, published alongside a
-`.sha256` file.
+of them is a `.zip` containing the binary and `COPYING`, the license, at the top level,
+published alongside a `.sha256` file.
 
 ## Linux, x86_64
 
@@ -148,6 +148,9 @@ $ geth version
     $ xattr -d com.apple.quarantine geth
     ```
 
+    Once macOS has blocked it, **Open Anyway** in System Settings, under Privacy & Security,
+    also lets it run ([Apple's instructions](https://support.apple.com/en-us/102445)).
+
 Before running it on a node that holds value, also
 [verify where the archive came from](#verify-where-the-archive-came-from).
 
@@ -170,8 +173,22 @@ Download `core-geth-win64-<tag>.zip` and its `.sha256`. In PowerShell:
 `Get-FileHash` prints uppercase hex and the `.sha256` file holds lowercase followed by
 the filename; the letters must match, the case does not.
 
-The archive contains `geth.exe` alone. Move it wherever you keep command-line tools
+The archive contains `geth.exe` and `COPYING`, the license. Move `geth.exe` wherever you keep command-line tools
 and add that directory to `PATH` if you want to run it by name.
+
+!!! tip "If Windows warns about the publisher"
+    These binaries are not code-signed, so Windows shows their publisher as unknown. That
+    appears in the firewall alert on the first start, and in the *"Windows protected your
+    PC"* screen if Microsoft Defender SmartScreen stops a downloaded `geth.exe`. Check the
+    archive first, against its checksum above and
+    [where it came from](#verify-where-the-archive-came-from). Then allow the firewall
+    access, and in the SmartScreen screen select **More info**, then **Run anyway**. A
+    browser marks what it downloads, and removing the mark from the archive before you
+    extract it avoids the SmartScreen screen:
+
+    ```powershell
+    > Unblock-File "core-geth-win64-$VERSION.zip"
+    ```
 
 Before running it on a node that holds value, also
 [verify where the archive came from](#verify-where-the-archive-came-from).
@@ -336,8 +353,8 @@ Each platform publishes two archives:
 
 | Archive | Contains |
 | --- | --- |
-| `core-geth-<platform>-<tag>.zip` | the `geth` node binary alone |
-| `core-geth-alltools-<platform>-<tag>.zip` | `geth` plus the other tools built from this source |
+| `core-geth-<platform>-<tag>.zip` | the `geth` node binary, and `COPYING` |
+| `core-geth-alltools-<platform>-<tag>.zip` | `geth` plus the other tools built from this source, and `COPYING` |
 
 Every route above uses the first. The `alltools` archive adds every other executable
 built from this source (`abidump`, `abigen`, `ancient-store-mem`, `bootnode`,
@@ -345,6 +362,5 @@ built from this source (`abidump`, `abigen`, `ancient-store-mem`, `bootnode`,
 installs exactly the same way. Read the archive itself rather than this list if you
 need to be certain: the release ships whatever `make all` produced.
 
-Once `geth` is installed, [Run an Ethereum Classic node](run-classic-node.md) takes it to a
-synced node running as a service, and [Run a Mordor node](run-mordor-node.md) does the same
-on the test network.
+Once `geth` is installed, [Running a node](run-a-node.md) takes it to a synced node that keeps
+running, with a guide for each platform and the flags for each kind of node.

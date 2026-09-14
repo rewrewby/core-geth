@@ -2,9 +2,10 @@
 title: Run an Ethereum Classic node
 ---
 
-This page takes a `geth` installed from [Installation](installation.md) to a synced Ethereum
-Classic node that runs as a service and stops cleanly. [Run a Mordor node](run-mordor-node.md)
-follows the same path on the test network.
+This page follows an Ethereum Classic node in depth, from its first start to a clean stop. Its
+commands are written for Linux and macOS. [Running a node](run-a-node.md) has a guide for each
+platform, including Windows and Docker, and the flags for each kind of node.
+[Run a Mordor node](run-mordor-node.md) covers what differs on the test network.
 
 ## What this runs, and what it does not need
 
@@ -192,76 +193,14 @@ After an upgrade from v1.12.x, use the checks in
 
 ## Run it as a service
 
-The project ships no service unit, so this one is an example to adapt. It runs the node as a
-dedicated user, restarts it if it fails, and gives it five minutes to stop.
+Each platform guide keeps the node running, and gives it time to stop cleanly:
 
-1. **Create the user.** `--create-home` matters: `geth attach` needs a home directory it can
-   write to, even when you give it the socket's path.
-
-    ```shell
-    $ sudo useradd --system --create-home --shell /usr/sbin/nologin geth
-    ```
-
-2. **Save the unit** as `/etc/systemd/system/core-geth.service`:
-
-    ```ini
-    [Unit]
-    Description=Core-Geth node on Ethereum Classic
-    Wants=network-online.target
-    After=network-online.target
-
-    [Service]
-    User=geth
-    StateDirectory=core-geth
-    ExecStart=/usr/local/bin/geth --classic --datadir /var/lib/core-geth
-    Restart=on-failure
-    TimeoutStopSec=300
-
-    [Install]
-    WantedBy=multi-user.target
-    ```
-
-3. **Start it now and at every boot:**
-
-    ```shell
-    $ sudo systemctl daemon-reload
-    $ sudo systemctl enable --now core-geth
-    ```
-
-4. **Follow its log.** Reading the system journal takes membership of the `adm` or
-   `systemd-journal` group, or `sudo`:
-
-    ```shell
-    $ journalctl -u core-geth -f
-    ```
-
-What the unit's settings do:
-
-- **`StateDirectory=core-geth`** has systemd create `/var/lib/core-geth`, owned by `geth`. To keep
-  a data directory you already synced in the foreground, put its path in `--datadir` instead, and
-  make it owned by `geth`.
-- **`ExecStart`** uses the path [Installation](installation.md) installs `geth` to.
-- **`Restart=on-failure`** restarts the node after it exits with an error or dies from a signal
-  such as SIGKILL. A node that shuts itself down because the disk is nearly full exits cleanly, so
-  systemd leaves it stopped ([running out of disk](hardware-requirements.md#running-out-of-disk)).
-- **`TimeoutStopSec=300`** is how long systemd waits after its SIGTERM before it kills the node
-  with SIGKILL. Five minutes is well beyond every clean stop measured, including one made during a
-  first sync ([stop times](hardware-requirements.md#stopping)). A killed node skips the shutdown
-  that writes its state to disk.
-
-The IPC socket belongs to `geth`, and only `geth` and root can connect to it, so run `geth attach`
-as `geth`. `-H` gives it `geth`'s home directory to write to:
-
-```shell
-$ sudo -u geth -H geth --classic attach --exec 'eth.syncing' /var/lib/core-geth/geth.ipc
-```
-
-**In a container**, the counterparts are two `docker run` flags, added to the command under
-[Docker](installation.md#docker). One is a restart policy, such as `--restart unless-stopped`
-(Docker documents its
-[restart policies](https://docs.docker.com/engine/containers/start-containers-automatically/)).
-The other is `--stop-timeout 300`, which sets how long `docker stop` waits before it kills the
-node.
+| Platform | How | Where |
+| --- | --- | --- |
+| Linux | A systemd service | [Linux users guide, step 6](run/linux.md#6-keep-it-running-a-systemd-service) |
+| macOS | A launchd agent | [Mac users guide, step 6](run/macos.md#6-keep-it-running-a-launchd-agent) |
+| Windows | A window that opens when you sign in | [Windows users guide, step 6](run/windows.md#6-keep-it-running-start-it-when-you-sign-in) |
+| Docker | A restart policy and a stop timeout | [Docker users guide, step 3](run/docker.md#3-start-the-node) |
 
 ## Stop it safely
 
@@ -356,6 +295,7 @@ the head has reached `activatedAtBlock`, the block MESS applies from.
 
 ## Next steps
 
+- [Running a node](run-a-node.md), for your platform's commands and the flags for each kind of node.
 - [Run a Mordor node](run-mordor-node.md), to rehearse on the test network.
 - [Hardware requirements](hardware-requirements.md), for disk, memory and sync times.
 - [Sync modes and data retention](../operate/sync-modes.md), for how a node syncs and what it

@@ -19,7 +19,8 @@ are maintained here rather than inherited, which is what this client is for.
 | --- | --- |
 | **Pages for your role** | [Choose your role](guides/index.md): miners, pools, exchanges, RPC providers and more |
 | **Upgrading from v1.12.x** | [Migration guide](tutorials/v1.13.0-migration.md): read this before you upgrade |
-| Running a node for the first time | [Installation](getting-started/installation.md), then [Command line](getting-started/run-cli.md) |
+| Running a node for the first time | [Installation](getting-started/installation.md), then [Running a node](getting-started/run-a-node.md): a guide for Linux, macOS, Windows and Docker, and the flags for each kind of node |
+| Trying the Mordor test network | [Choose your network](getting-started/run-a-node.md#choose-your-network) |
 | Building it yourself | [Build from source](developers/build-from-source.md) |
 | Reviewing what was audited | [The four audit reports](#what-was-audited) |
 

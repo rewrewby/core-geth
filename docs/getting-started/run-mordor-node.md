@@ -6,9 +6,10 @@ Mordor is Ethereum Classic's proof-of-work test network. Its chain is a fraction
 size, which makes it the place to try the client, test contracts, and rehearse a mainnet
 deployment before it matters.
 
-Everything on [Run an Ethereum Classic node](run-classic-node.md) applies here: running as a
-service, stopping safely, reading the log, and telling when the sync is done. This page covers
-what differs.
+Everything on [Run an Ethereum Classic node](run-classic-node.md) applies here: stopping safely,
+reading the log, and telling when the sync is done. This page covers what differs.
+[Running a node](run-a-node.md) gives the commands for each platform, including Windows and
+Docker, with Mordor's beside Ethereum Classic's.
 
 ## What Mordor is
 
@@ -151,5 +152,5 @@ node:
 Fatal: Unable to attach to remote geth: dial unix <home>/.ethereum/classic/geth.ipc: connect: no such file or directory
 ```
 
-For a node that runs as a service, attach as the service's user, as shown under
-[run it as a service](run-classic-node.md#run-it-as-a-service).
+For a node that runs as a systemd service, attach as the service's user, as the
+[Linux users guide](run/linux.md#6-keep-it-running-a-systemd-service) shows.

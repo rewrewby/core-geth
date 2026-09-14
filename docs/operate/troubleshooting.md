@@ -5,8 +5,8 @@ title: Troubleshooting
 Each section starts from what you see and ends with what the node does once the problem is fixed.
 Where another page owns a procedure, the section links to it.
 
-A node started in the foreground logs to the terminal. A node run as a service logs to the system
-journal ([Run it as a service](../getting-started/run-classic-node.md#run-it-as-a-service)). The
+A node started in the foreground logs to the terminal. A node run as a systemd service logs to the
+system journal ([Linux users guide](../getting-started/run/linux.md#6-keep-it-running-a-systemd-service)), and a node in Docker to `docker logs`. The
 commands below pass `--classic`; on a Mordor node, pass `--mordor` instead.
 
 ## Starting the node

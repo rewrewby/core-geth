@@ -21,8 +21,14 @@ nav:
   - Getting started:
       - Installation: getting-started/installation.md
       - Hardware requirements: getting-started/hardware-requirements.md
-      - Run an Ethereum Classic node: getting-started/run-classic-node.md
-      - Run a Mordor node: getting-started/run-mordor-node.md
+      - Running a node:
+          - Overview: getting-started/run-a-node.md
+          - Linux users guide: getting-started/run/linux.md
+          - Mac users guide: getting-started/run/macos.md
+          - Windows users guide: getting-started/run/windows.md
+          - Docker users guide: getting-started/run/docker.md
+          - Run an Ethereum Classic node: getting-started/run-classic-node.md
+          - Run a Mordor node: getting-started/run-mordor-node.md
       - Command line: getting-started/run-cli.md
   - Upgrading to v1.13.0:
       - Overview: tutorials/v1.13.0-migration.md

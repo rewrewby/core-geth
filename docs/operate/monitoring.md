@@ -83,7 +83,7 @@ InfluxDB` warnings and keeps running.
 | `NRestarts` | systemd | How many times systemd has restarted the node's service |
 
 For a node run as the `core-geth` service
-([Run it as a service](../getting-started/run-classic-node.md#run-it-as-a-service)):
+([Linux users guide](../getting-started/run/linux.md#6-keep-it-running-a-systemd-service)):
 
 ```shell
 $ systemctl show core-geth -p NRestarts
@@ -150,9 +150,8 @@ Over local HTTP the same checks are the
 
 ## Logs
 
-The node logs to standard error. Under systemd that goes to the journal, which
-[Run it as a service](../getting-started/run-classic-node.md#run-it-as-a-service) shows how to
-follow.
+The node logs to standard error. Under systemd that goes to the journal, which the
+[Linux users guide](../getting-started/run/linux.md#6-keep-it-running-a-systemd-service) shows how to follow.
 
 | Flag | What it does |
 | --- | --- |

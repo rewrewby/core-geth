@@ -15,9 +15,8 @@ title: Command Line Interface (CLI)
 
 ### A node on an Ethereum Classic network
 
-For running a node on Ethereum Classic mainnet, from an installed `geth` to a synced,
-supervised, safely stopped node, see
-[Run an Ethereum Classic node](../getting-started/run-classic-node.md).
+For running a node, from an installed `geth` to a synced, supervised, safely stopped node, see
+[Running a node](../getting-started/run-a-node.md), which has a guide for each platform.
 
 ```
 $ geth [--classic|--mordor] console
