@@ -145,7 +145,7 @@ USAGE:
    geth [global options] command [command options]
 
 VERSION:
-   1.13.0-RC3-5b694910-20260913
+   1.13.0-RC4-23c090e2-20260913
 
 COMMANDS:
    account                Manage accounts
@@ -750,8 +750,7 @@ GLOBAL OPTIONS:
 
 
     --cache value                       (default: 1024)                    ($GETH_CACHE)
-          Megabytes of memory allocated to internal caching (default = 4096 mainnet full
-          node, 128 light mode)
+          Megabytes of memory allocated to internal caching
 
     --cache.blocklogs value             (default: 32)                      ($GETH_CACHE_BLOCKLOGS)
           Size (in number of blocks) of the log cache for filtering

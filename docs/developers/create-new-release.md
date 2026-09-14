@@ -48,7 +48,7 @@ wrong, cut the next one.
 | Workflow | Produces |
 | --- | --- |
 | `release-packages.yml` | 18 archives: 9 platforms × (`geth`, `alltools`), each with a `.sha256`, plus a build attestation, uploaded to a **draft** release |
-| `docker-publish.yml` | multi-architecture images for `linux/amd64` and `linux/arm64`, pushed to GHCR |
+| `docker-publish.yml` | multi-architecture images for `linux/amd64` and `linux/arm64`, pushed to GHCR, then the images saved as four `.tar.gz` files, each with a `.sha256` and a build attestation, attached to the draft release |
 
 A tag whose name contains a hyphen is treated as a prerelease: the GitHub release is
 marked as one, and the container image does **not** take `:latest`. Only a full
@@ -56,7 +56,7 @@ release such as `v1.13.0` takes the moving tag.
 
 ## Before publishing the draft
 
-- [ ] **All 18 archives are attached**, and each `.sha256` matches its archive.
+- [ ] **All 18 archives and the four image tarballs are attached**, and each `.sha256` matches its file.
 - [ ] **The archive names carry the tag**, not a commit SHA. A bare SHA means the
       tag was not present in the build checkout.
 - [ ] **The attestation verifies against a downloaded archive**, which is a
@@ -64,6 +64,15 @@ release such as `v1.13.0` takes the moving tag.
 
     ```shell
     $ gh attestation verify core-geth-linux-v1.13.0-rc1.zip --repo ethereumclassic/core-geth
+    ```
+
+- [ ] **Load an image tarball.** Its attestation verifies, it loads under the published name, and
+      its image ID equals the config digest of that architecture's published image:
+
+    ```shell
+    $ gh attestation verify core-geth-docker-amd64-<tag>.tar.gz --repo ethereumclassic/core-geth
+    $ docker load -i core-geth-docker-amd64-<tag>.tar.gz
+    $ docker run --rm ghcr.io/ethereumclassic/core-geth:<tag> version
     ```
 
 - [ ] **Spot-check a binary.** It should report the version you set, and its glibc

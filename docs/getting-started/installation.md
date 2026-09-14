@@ -214,9 +214,54 @@ node alone, is published under the same name with an `alltools-` prefix, as
     Images published as `etclabscore/core-geth` on Docker Hub are not built from
     this source and receive nothing released here.
 
-You can also build an image yourself. The `Dockerfile` produces an image
-containing `geth`, and `Dockerfile.alltools` one containing the full tool
-set:
+!!! note "If the pull returns `unauthorized`"
+    The images are published but not yet public. Until they are, load the image from the
+    release or build it locally, as below. It runs the same way.
+
+### Load the image from the release
+
+Each release also carries its images as files, one per architecture:
+`core-geth-docker-amd64-<tag>.tar.gz` and `core-geth-docker-arm64-<tag>.tar.gz`, and
+`core-geth-alltools-docker-amd64-<tag>.tar.gz` and `core-geth-alltools-docker-arm64-<tag>.tar.gz`
+for the full tool set. Each is the published image saved from the registry, with a `.sha256` and
+a build attestation. Verify the one for your machine and load it:
+
+```shell
+$ gh attestation verify core-geth-docker-amd64-v1.13.0.tar.gz --repo ethereumclassic/core-geth
+$ docker load -i core-geth-docker-amd64-v1.13.0.tar.gz
+```
+
+The loaded image keeps its published name, `ghcr.io/ethereumclassic/core-geth:v1.13.0`, so the
+`docker run` command below works unchanged.
+
+### Build an image from the release archive
+
+This packages the binary the release attested, rather than compiling one. Download
+`core-geth-linux-<tag>.zip` for `linux/amd64` or `core-geth-arm64-<tag>.zip` for `linux/arm64`
+from the release, [verify it](#verify-where-the-archive-came-from), and unpack it next to this
+`Dockerfile`:
+
+```dockerfile
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY geth /usr/local/bin/geth
+EXPOSE 8545 8546 30303 30303/udp
+ENTRYPOINT ["geth"]
+```
+
+```shell
+$ unzip core-geth-linux-v1.13.0.zip
+$ docker build -t core-geth:v1.13.0 .
+$ docker run --rm core-geth:v1.13.0 version
+```
+
+Use a glibc-based image such as Debian or Ubuntu. The release binaries link against glibc, so an
+Alpine base cannot run them.
+
+### Build an image from source
+
+The `Dockerfile` produces an image containing `geth`, and `Dockerfile.alltools` one containing
+the full tool set:
 
 ```shell
 $ git clone https://github.com/ethereumclassic/core-geth.git
@@ -224,8 +269,10 @@ $ cd core-geth
 $ docker build -t core-geth:local .
 ```
 
-Run it either way. The image's entry point is the `geth` binary, so flags are
-passed straight to the node. `--name` below labels the running container and is
+### Run the container
+
+Run the image the same way whichever method produced it. Its entry point is the `geth` binary,
+so flags are passed straight to the node. `--name` below labels the running container and is
 yours to choose:
 
 ```shell
@@ -239,8 +286,8 @@ $ docker run -d \
     --http --http.addr 0.0.0.0 --http.port 8545
 ```
 
-If you built the image yourself, use your own tag (`core-geth:local`, above) in
-place of `ghcr.io/ethereumclassic/core-geth:latest`.
+If you built the image yourself, use your own tag (`core-geth:v1.13.0` or `core-geth:local`,
+above) in place of `ghcr.io/ethereumclassic/core-geth:latest`.
 
 That maps the devp2p port over both TCP and UDP, keeps chain data in
 `$LOCAL_DATADIR` on the host so it survives the container, and reaches the
