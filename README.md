@@ -360,10 +360,12 @@ inspired by the work of earlier Ethereum Classic development teams: ETCDEV's
 [Classic Geth](https://github.com/ethereumproject/go-ethereum) and Orbita vision, and
 [IOHK](https://iohk.io/)'s [Mantis](https://web.archive.org/web/20211026113958/https://mantisclient.io/).
 
-**Supporting the work.** The public-goods work on Core-Geth since maintenance moved to the
-community repository has been unfunded, and donations and retroactive grants are
-appreciated. Contact White B0x through the form at <https://whiteb0x.com> or at
-<contact@whiteb0x.com>, or donate on any EVM chain.
+**Supporting the work.** Maintaining Core-Geth since it moved to the community repository has been
+unfunded public-goods work. Mining pools, centralized exchanges, issuers of Ethereum Classic
+financial products, Etchash mining hardware manufacturers and large holders all depend on an
+Ethereum Classic client that follows the network correctly and receives security fixes promptly. If
+your operation relies on Ethereum Classic, please help fund that work with a donation or a
+retroactive grant. Contact <donations@ethereumclassic.com>, or donate on any EVM chain.
 
 **Retroactive Core-Geth Development Donation Address:**
 

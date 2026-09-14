@@ -121,13 +121,15 @@ been with the network since its inception.
 
 ## Support this work
 
-The public-goods work on Core-Geth since maintenance moved to the community repository has been
-unfunded, and donations and retroactive grants are appreciated. Contact
-[White B0x](https://whiteb0x.com) through the form at <https://whiteb0x.com> or at
-<contact@whiteb0x.com>, or donate on any EVM chain.
+Maintaining Core-Geth since it moved to the community repository has been unfunded public-goods
+work. Mining pools, centralized exchanges, issuers of Ethereum Classic financial products, Etchash
+mining hardware manufacturers and large holders all depend on an Ethereum Classic client that
+follows the network correctly and receives security fixes promptly. If your operation relies on
+Ethereum Classic, please help fund that work with a donation or a retroactive grant. Contact
+<donations@ethereumclassic.com>, or donate on any EVM chain.
 
 **Retroactive Core-Geth Development Donation Address:**
 
-```text
+``` { .text .copy }
 0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
 ```
