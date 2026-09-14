@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -319,16 +318,9 @@ func main() {
 	}
 }
 
-func checkMainnet(ctx *cli.Context) bool {
-	isMainnet := false
-
+// logNetwork logs which known network the node is starting on.
+func logNetwork(ctx *cli.Context) {
 	switch {
-	case ctx.IsSet(utils.SepoliaFlag.Name):
-		log.Info("Starting Core-Geth on Sepolia testnet...")
-
-	case ctx.IsSet(utils.HoleskyFlag.Name):
-		log.Info("Starting Core-Geth on Holesky testnet...")
-
 	case ctx.IsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Core-Geth in ephemeral proof-of-authority network dev mode...")
 		log.Warn(`You are running Geth in --dev mode. Please note the following:
@@ -364,7 +356,7 @@ func checkMainnet(ctx *cli.Context) bool {
      to 0, and discovery is disabled.
 `)
 
-	case ctx.IsSet(utils.ClassicFlag.Name):
+	case ctx.IsSet(utils.ClassicFlag.Name), ctx.IsSet(utils.MainnetFlag.Name):
 		log.Info("Starting Core-Geth on Ethereum Classic...")
 
 	case ctx.IsSet(utils.MordorFlag.Name):
@@ -373,30 +365,18 @@ func checkMainnet(ctx *cli.Context) bool {
 	case ctx.IsSet(utils.MintMeFlag.Name):
 		log.Info("Starting Core-Geth on MintMe.com Coin mainnet...")
 
-	case !ctx.IsSet(utils.NetworkIdFlag.Name):
-		log.Info("Starting Core-Geth on Ethereum mainnet...")
-		isMainnet = true
+	case !utils.IsNetworkPreset(ctx) && !ctx.IsSet(utils.NetworkIdFlag.Name):
+		// No network flag runs Ethereum Classic, with the same defaults as
+		// --classic, the cache allowance among them.
+		log.Info("Starting Core-Geth on Ethereum Classic...")
 	}
-
-	return isMainnet
 }
 
-// prepare manipulates memory cache allowance and setups metric system.
+// prepare logs the network and sets up the metrics system.
 // This function should be called before launching devp2p stack.
 func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
-
-	isMainnet := checkMainnet(ctx)
-
-	// If we're a full node on mainnet without --cache specified, bump default cache allowance
-	if !ctx.IsSet(utils.CacheFlag.Name) && !ctx.IsSet(utils.NetworkIdFlag.Name) {
-		// Make sure we're not on any supported preconfigured testnet either
-		if isMainnet {
-			// Nope, we're really on mainnet. Bump that cache up!
-			log.Info("Bumping default cache on mainnet", "provided", ctx.Int(utils.CacheFlag.Name), "updated", 4096)
-			ctx.Set(utils.CacheFlag.Name, strconv.Itoa(4096))
-		}
-	}
+	logNetwork(ctx)
 
 	// Start metrics export if enabled
 	utils.SetupMetrics(ctx)

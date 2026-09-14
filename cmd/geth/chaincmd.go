@@ -419,15 +419,10 @@ func importHistory(ctx *cli.Context) error {
 		network string
 	)
 
-	// Determine network.
-	if utils.IsNetworkPreset(ctx) {
-		switch {
-		case ctx.Bool(utils.MainnetFlag.Name):
-			network = "mainnet"
-		case ctx.Bool(utils.SepoliaFlag.Name):
-			network = "sepolia"
-		}
-	} else {
+	// Determine network. Era1 archives are named for the Ethereum networks
+	// (params.NetworkNames), none of which a network flag selects any more:
+	// --mainnet is Ethereum Classic, and the Ethereum flags refuse to start.
+	if !utils.IsNetworkPreset(ctx) {
 		// No network flag set, try to determine network based on files
 		// present in directory.
 		var networks []string

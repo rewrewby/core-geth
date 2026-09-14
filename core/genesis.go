@@ -118,9 +118,9 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 	stored := rawdb.ReadCanonicalHash(db, 0)
 	if (stored == common.Hash{}) {
 		if genesis == nil {
-			log.Info("Writing default main-net genesis block")
-			log.Warn("Not specifying a chain flag is deprecated and will be removed in the future, please use --mainnet for Ethereum mainnet")
-			genesis = params.DefaultGenesisBlock()
+			// The default network is Ethereum Classic; see DefaultGenesisFor.
+			log.Info("Writing default Ethereum Classic genesis block")
+			genesis = params.DefaultClassicGenesisBlock()
 		} else {
 			log.Info("Writing custom genesis block")
 		}
@@ -131,6 +131,9 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 		}
 		log.Info("Wrote genesis block OK", "config", genesis.Config)
 		return genesis.Config, block.Hash(), nil
+	}
+	if genesis == nil {
+		genesis = DefaultGenesisFor(db)
 	}
 	// The genesis block is present(perhaps in ancient database) while the
 	// state database is not initialized yet. It can happen that the node
@@ -221,6 +224,32 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 		rawdb.WriteChainConfig(db, stored, newcfg)
 	}
 	return newcfg, stored, nil
+}
+
+// DefaultGenesisFor returns the genesis a node uses for db when no network was
+// chosen: Ethereum Classic's, unless db already holds another chain, in which
+// case it returns nil and the stored chain is used as it is.
+//
+// Ethereum forked from Ethereum Classic at the DAO fork, so a stored genesis
+// hash cannot tell the two apart; the stored chain ID does. A database with no
+// stored config is treated as Ethereum Classic.
+//
+// Returning a genesis rather than nil matters for Ethereum Classic: the
+// consensus engine takes its ECIP-1099 epoch schedule from it, and the stored
+// config is only upgraded to the current fork schedule when one is supplied.
+func DefaultGenesisFor(db ethdb.Database) *genesisT.Genesis {
+	stored := rawdb.ReadCanonicalHash(db, 0)
+	if stored != (common.Hash{}) {
+		if stored != params.MainnetGenesisHash {
+			return nil
+		}
+		if storedcfg := rawdb.ReadChainConfig(db, stored); storedcfg != nil {
+			if id := storedcfg.GetChainID(); id == nil || id.Cmp(params.ClassicChainConfig.GetChainID()) != 0 {
+				return nil
+			}
+		}
+	}
+	return params.DefaultClassicGenesisBlock()
 }
 
 // LoadCliqueConfig loads the stored clique config if the chain config

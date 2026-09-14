@@ -44,7 +44,7 @@ are maintained here rather than inherited, which is what this client is for.
 
 | Network | Chain ID | Consensus | Flag |
 | --- | --- | --- | --- |
-| Ethereum Classic | 61 | Proof of Work (Etchash) | `--classic` |
+| Ethereum Classic | 61 | Proof of Work (Etchash) | `--classic`, `--mainnet` or no flag |
 | Mordor testnet | 63 | Proof of Work (Etchash) | `--mordor` |
 | MintMe.com Coin | 24734 | Proof of Work | `--mintme` |
 | Private chains | configurable | PoW / PoA | genesis configuration |
@@ -54,15 +54,16 @@ Ethereum Classic runs every hard fork from Frontier through Spiral. The
 lists each upgrade with its activation block and the EIPs it included; `params/` in the
 source is the authority, and a fork schedule recalled from memory is a guess.
 
-### Networks this client registers but does not maintain
+**With no network flag, `geth` runs Ethereum Classic mainnet**, and `--mainnet` is the
+same as `--classic`. A data directory initialized with a private network's genesis keeps
+running that network.
 
-**Ethereum mainnet, Sepolia and Holesky are inherited from upstream and are not
-maintained here** — and `--mainnet` is still what a bare invocation selects. This client
-implements Ethereum through Cancun and no further, so a node pointed at one of them
-follows the real chain until the next fork it does not know about, then continues on its
-own rules **without reporting anything**. They are scheduled for removal.
+### Networks this client does not support
 
-Pass `--classic` or `--mordor` explicitly.
+**Ethereum mainnet, Sepolia and Holesky are not supported.** This client implements
+Ethereum upgrades only through Cancun, so it cannot follow any of them. `--ethereum`,
+`--sepolia` and `--holesky` are deprecated and refuse to start, rather than start a node
+that would fall off its chain.
 
 **MintMe is carried deliberately.** `--mintme` works, and this release includes the
 MintMe hardfork enabling PUSH0 and MCOPY. It is scheduled for deprecation in a later

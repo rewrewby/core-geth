@@ -23,7 +23,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/params/confp/generic"
 )
 
@@ -74,8 +73,9 @@ func TestDAOForkBlockNewChain(t *testing.T) {
 		expectBlock *uint64
 		expectVote  bool
 	}{
-		// Test DAO Default Mainnet
-		{"", params.MainnetChainConfig.GetEthashEIP779Transition(), true},
+		// With no genesis and no network flag the node runs Ethereum Classic,
+		// the chain that rejected the DAO fork.
+		{"", nil, false},
 		// test DAO Init Old Privnet
 		//{daoOldGenesis, nil, false},
 		// test DAO Default No Fork Privnet

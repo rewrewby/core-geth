@@ -24,17 +24,18 @@ func TestConsoleCmdNetworkIdentities(t *testing.T) {
 		chainId     int
 		genesisHash string
 	}{
-		// Default chain value, without and with --networkid flag set.
-		{[]string{}, 1, 1, params.MainnetGenesisHash.Hex()},
-		{[]string{"--networkid", "42"}, 42, 1, params.MainnetGenesisHash.Hex()},
+		// Default chain value, without and with --networkid flag set. With no
+		// network flag the node runs Ethereum Classic, whose genesis hash is the
+		// one Ethereum shares: only the chain ID tells them apart.
+		{[]string{}, 1, 61, params.MainnetGenesisHash.Hex()},
+		{[]string{"--networkid", "42"}, 42, 61, params.MainnetGenesisHash.Hex()},
 
-		// Non-default chain value, without and with --networkid flag set.
+		// The same chain named explicitly, without and with --networkid flag set.
 		{[]string{"--classic"}, 1, 61, params.MainnetGenesisHash.Hex()},
 		{[]string{"--classic", "--networkid", "42"}, 42, 61, params.MainnetGenesisHash.Hex()},
+		{[]string{"--mainnet"}, 1, 61, params.MainnetGenesisHash.Hex()},
 
 		// All other possible --<chain> values.
-		{[]string{"--mainnet"}, 1, 1, params.MainnetGenesisHash.Hex()},
-		{[]string{"--sepolia"}, 11155111, 11155111, params.SepoliaGenesisHash.Hex()},
 		{[]string{"--mordor"}, 7, 63, params.MordorGenesisHash.Hex()},
 		{[]string{"--mintme"}, 37480, 24734, params.MintMeGenesisHash.Hex()},
 		{[]string{"--dev"}, 1337, 1337, "0x0"},
@@ -83,6 +84,20 @@ func TestGethFailureToLaunch(t *testing.T) {
 			flags:            []string{"--badnet"},
 			expectErrorReStr: "(?ism)incorrect usage.*",
 		},
+		// The Ethereum networks are followed only through Cancun; their flags
+		// refuse to start instead of running a node that falls off the chain.
+		{
+			flags:            []string{"--ethereum"},
+			expectErrorReStr: "(?ism)Fatal: --ethereum is deprecated.*Cancun.*",
+		},
+		{
+			flags:            []string{"--sepolia"},
+			expectErrorReStr: "(?ism)Fatal: --sepolia is deprecated.*Cancun.*",
+		},
+		{
+			flags:            []string{"--holesky", "console"},
+			expectErrorReStr: "(?ism)Fatal: --holesky is deprecated.*Cancun.*",
+		},
 	}
 	for i, c := range cases {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
@@ -130,19 +145,20 @@ func TestGethStartupLogs(t *testing.T) {
 	}{
 		{
 			// --<chain> flag is NOT given and datadir does not exist, representing a first tabula-rasa run.
-			// Use without a --<chain> flag is deprecated. User will be warned.
+			// The node runs Ethereum Classic, and says so; no flag is not deprecated.
 			flags: []string{},
 			matchers: []matching{
-				{pattern: "(?ism).+WARN.+Not specifying a chain flag is deprecated.*", matches: true},
+				{pattern: "(?ism).+INFO.+Wrote genesis block OK.+ChainID: 61 .*", matches: true},
+				{pattern: "(?ism).+WARN.+Not specifying a chain flag is deprecated.*", matches: false},
 			},
 		},
 		{
-			// Network flag is given.
-			// --<chain> flag is NOT given. This is deprecated. User will be warned.
+			// Network ID flag is given, --<chain> flag is NOT given.
 			// Same same but different as above.
 			flags: []string{"--networkid=42"},
 			matchers: []matching{
-				{pattern: "(?ism).+WARN.+Not specifying a chain flag is deprecated.*", matches: true},
+				{pattern: "(?ism).+INFO.+Wrote genesis block OK.+ChainID: 61 .*", matches: true},
+				{pattern: "(?ism).+WARN.+Not specifying a chain flag is deprecated.*", matches: false},
 			},
 		},
 		// Little bit of a HACK.

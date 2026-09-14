@@ -48,6 +48,9 @@ var DeprecatedFlags = []cli.Flag{
 	UltraLightServersFlag,
 	UltraLightFractionFlag,
 	UltraLightOnlyAnnounceFlag,
+	EthereumFlag,
+	SepoliaFlag,
+	HoleskyFlag,
 	LogBacktraceAtFlag,
 	LogDebugFlag,
 }

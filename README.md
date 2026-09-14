@@ -71,18 +71,18 @@ Core-Geth is a production execution client for the Ethereum Classic network. It 
 
 | Network | Chain ID | Consensus | Flag |
 |---------|----------|-----------|------|
-| Ethereum Classic (ETC) | 61 | Proof of Work (ETChash) | `--classic` |
+| Ethereum Classic (ETC) | 61 | Proof of Work (ETChash) | `--classic`, `--mainnet` or no flag |
 | Mordor Testnet | 63 | Proof of Work (ETChash) | `--mordor` |
 | MintMe.com Coin | 24734 | Proof of Work | `--mintme` |
 | Private chains | configurable | PoW / PoA | genesis config |
 
-Ethereum mainnet, Sepolia and Holesky are also registered, inherited from upstream
-go-ethereum, and `--mainnet` is still what a bare invocation selects.
+**With no network flag, Core-Geth runs Ethereum Classic mainnet**, and `--mainnet` is the
+same as `--classic`. A data directory initialized with a private network's genesis keeps
+running that network.
 
-**They are not maintained here.** This client implements Ethereum through Cancun
-and no further, so a node run on any of them follows the real chain up to the next
-fork it does not know about and then continues on its own rules without reporting
-anything. Use `--classic` or `--mordor` explicitly.
+**Ethereum and its test networks are not supported.** This client implements Ethereum
+upgrades only through Cancun, so it cannot follow Ethereum mainnet, Sepolia or Holesky.
+`--ethereum`, `--sepolia` and `--holesky` are deprecated and refuse to start.
 
 ### ETC consensus history
 

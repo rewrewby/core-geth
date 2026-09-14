@@ -148,6 +148,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			log.Error("Failed to recover state", "error", err)
 		}
 	}
+	// With no network chosen, settle the genesis now: everything below, the
+	// consensus engine first, is configured from it.
+	if config.Genesis == nil {
+		config.Genesis = core.DefaultGenesisFor(chainDb)
+	}
 	// Transfer mining-related config to the ethash config.
 	ethashConfig := config.Ethash
 	ethashConfig.NotifyFull = config.Miner.NotifyFull
@@ -177,6 +182,13 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	networkID := config.NetworkId
 	if networkID == 0 {
 		networkID = chainConfig.GetChainID().Uint64()
+		// A preset network declares its own network ID, which need not equal
+		// its chain ID: Ethereum Classic's is 1, and its chain ID is 61.
+		if config.Genesis != nil {
+			if id := config.Genesis.GetNetworkID(); id != nil && *id != 0 {
+				networkID = *id
+			}
+		}
 	}
 	eth := &Ethereum{
 		config:            config,

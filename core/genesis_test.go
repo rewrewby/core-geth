@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/params/confp"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
 	"github.com/ethereum/go-ethereum/params/types/ctypes"
 	"github.com/ethereum/go-ethereum/params/types/genesisT"
 	"github.com/ethereum/go-ethereum/params/types/goethereum"
@@ -106,12 +107,16 @@ func testSetupGenesis(t *testing.T, scheme string) {
 			wantConfig: params.AllEthashProtocolChanges,
 		},
 		{
+			// With no network flag and an empty database, this client starts an
+			// Ethereum Classic node. The genesis hash is the shared one — Ethereum
+			// forked from this chain at the DAO fork — so only the chain config
+			// distinguishes the two, and it must be Classic's.
 			name: "no block in DB, genesis == nil",
 			fn: func(db ethdb.Database) (ctypes.ChainConfigurator, common.Hash, error) {
 				return SetupGenesisBlock(db, triedb.NewDatabase(db, newDbConfig(scheme)), nil)
 			},
 			wantHash:   params.MainnetGenesisHash,
-			wantConfig: params.MainnetChainConfig,
+			wantConfig: params.ClassicChainConfig,
 		},
 		{
 			name: "mainnet block in DB, genesis == nil",
@@ -121,6 +126,21 @@ func testSetupGenesis(t *testing.T, scheme string) {
 			},
 			wantHash:   params.MainnetGenesisHash,
 			wantConfig: params.MainnetChainConfig,
+		},
+		{
+			// A database written by an earlier release holds that release's
+			// Ethereum Classic config. With no network flag it must be moved to
+			// the current one, exactly as --classic does, or the node would never
+			// activate a fork scheduled after that release.
+			name: "classic block with an earlier config in DB, genesis == nil",
+			fn: func(db ethdb.Database) (ctypes.ChainConfigurator, common.Hash, error) {
+				earlier := params.DefaultClassicGenesisBlock()
+				earlier.Config = classicConfigBeforeSpiral(t)
+				MustCommitGenesis(db, triedb.NewDatabase(db, nil), earlier)
+				return SetupGenesisBlock(db, triedb.NewDatabase(db, newDbConfig(scheme)), nil)
+			},
+			wantHash:   params.MainnetGenesisHash,
+			wantConfig: params.ClassicChainConfig,
 		},
 		{
 			name: "custom block in DB, genesis == nil",
@@ -202,6 +222,96 @@ func testSetupGenesis(t *testing.T, scheme string) {
 			}
 		}
 	}
+}
+
+// TestDefaultGenesisFor checks which genesis a node takes for its database when
+// no network flag is given.
+func TestDefaultGenesisFor(t *testing.T) {
+	customg := &genesisT.Genesis{
+		Config: &goethereum.ChainConfig{HomesteadBlock: big.NewInt(3)},
+		Alloc:  genesisT.GenesisAlloc{{1}: {Balance: big.NewInt(1)}},
+	}
+	tests := []struct {
+		name        string
+		prepare     func(ethdb.Database)
+		wantClassic bool
+	}{
+		{
+			name:        "empty database",
+			prepare:     func(ethdb.Database) {},
+			wantClassic: true,
+		},
+		{
+			name: "classic database",
+			prepare: func(db ethdb.Database) {
+				MustCommitGenesis(db, triedb.NewDatabase(db, nil), params.DefaultClassicGenesisBlock())
+			},
+			wantClassic: true,
+		},
+		{
+			// Ethereum shares the genesis hash; its stored chain ID keeps it from
+			// being taken for Ethereum Classic.
+			name: "ethereum database",
+			prepare: func(db ethdb.Database) {
+				MustCommitGenesis(db, triedb.NewDatabase(db, nil), params.DefaultGenesisBlock())
+			},
+		},
+		{
+			name: "custom database",
+			prepare: func(db ethdb.Database) {
+				MustCommitGenesis(db, triedb.NewDatabase(db, nil), customg)
+			},
+		},
+		{
+			// A genesis block with no config beside it, as an imported ancient
+			// store leaves.
+			name: "shared genesis block without a stored config",
+			prepare: func(db ethdb.Database) {
+				block := GenesisToBlock(params.DefaultClassicGenesisBlock(), nil)
+				rawdb.WriteBlock(db, block)
+				rawdb.WriteCanonicalHash(db, block.Hash(), 0)
+			},
+			wantClassic: true,
+		},
+	}
+	for _, test := range tests {
+		db := rawdb.NewMemoryDatabase()
+		test.prepare(db)
+		genesis := DefaultGenesisFor(db)
+		switch {
+		case test.wantClassic && genesis == nil:
+			t.Errorf("%s: returned nil, want the Ethereum Classic genesis", test.name)
+		case test.wantClassic && !reflect.DeepEqual(genesis.Config, params.ClassicChainConfig):
+			t.Errorf("%s: returned chain ID %v, want %v", test.name, genesis.Config.GetChainID(), params.ClassicChainConfig.GetChainID())
+		case !test.wantClassic && genesis != nil:
+			t.Errorf("%s: returned chain ID %v, want nil so the stored chain is used", test.name, genesis.Config.GetChainID())
+		}
+	}
+}
+
+// classicConfigBeforeSpiral returns the Ethereum Classic chain config as a
+// release that predates the Spiral fork stored it.
+func classicConfigBeforeSpiral(t *testing.T) ctypes.ChainConfigurator {
+	t.Helper()
+	data, err := json.Marshal(params.ClassicChainConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	earlier := new(coregeth.CoreGethChainConfig)
+	if err := json.Unmarshal(data, earlier); err != nil {
+		t.Fatal(err)
+	}
+	for _, unset := range []func(*uint64) error{
+		earlier.SetEIP3651Transition,
+		earlier.SetEIP3855Transition,
+		earlier.SetEIP3860Transition,
+		earlier.SetEIP6049Transition,
+	} {
+		if err := unset(nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return earlier
 }
 
 // TestGenesisHashes checks the congruity of default genesis data to
