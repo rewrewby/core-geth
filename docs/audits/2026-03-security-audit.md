@@ -118,11 +118,12 @@ is the question a reader deciding where to contribute needs answered.
 | February 4, 2026 | Ledger security researcher [@niooss-ledger](https://github.com/niooss-ledger) opens [issue #692](https://github.com/etclabscore/core-geth/issues/692) publicly documenting CVE-2025-24883, CVE-2026-22862, CVE-2026-22868: no response |
 | February 17, 2026 | go-ethereum v1.17.0 released, carrying the fixes for CVE-2026-26313, CVE-2026-26314 and CVE-2026-26315 |
 | February 18, 2026 | GHSA-689v-6xwf-5jf3, GHSA-2gjw-fg97-vg3r and GHSA-m6j8-rg6r-7mv8 published; the CVE records follow on February 19 |
-| February 26, 2026 | CVE-2025-24883 patch authored |
-| Early March 2026 | Go toolchain upgrade and remaining CVE patches authored |
+| February 26, 2026 | CVE-2025-24883 patch authored by [White B0x](https://whiteb0x.com) |
+| Early March 2026 | Go toolchain upgrade and remaining CVE patches authored by White B0x |
+| February–March 2026 | White B0x reports the security work privately to the ETC Cooperative |
 | March 18, 2026 | Active attack on ETC bootnodes: ECIES handshake crash-loop (`crypto/ecies.symDecrypt` panic) exploited in production; [@diega](https://github.com/diega) opens [PR #694](https://github.com/etclabscore/core-geth/pull/694) and self-merges it 60 seconds later with no peer review, releasing [v1.12.21](https://github.com/etclabscore/core-geth/releases/tag/v1.12.21) ("Aegis") approximately 5 hours after the issue was first reported. This was the first code response there in 21 months, forced by the live attack rather than prior disclosures. A cryptographic security patch authored, reviewed, and merged by one person, in a repository with no other active reviewers, is itself a supply-chain risk: the process has no second reviewer able to catch a defective or malicious change shipped under cover of an emergency. |
 | March 18, 2026 | @niooss-ledger [documents remaining unpatched CVEs](https://github.com/etclabscore/core-geth/pull/694#issuecomment-4089185353) after v1.12.21: CVE-2025-24883, CVE-2026-26313, and CVE-2026-26315 still unaddressed |
-| March 20–21, 2026 | The security work is submitted to `ethereumclassic/core-geth` as individually scoped pull requests ([#10](https://github.com/ethereumclassic/core-geth/pull/10)–[#36](https://github.com/ethereumclassic/core-geth/pull/36)), one per CVE with test coverage and linked CVE references, and cross-references the set in [issue #692](https://github.com/etclabscore/core-geth/issues/692) |
+| March 20–21, 2026 | White B0x submits the security work to `ethereumclassic/core-geth` as individually scoped pull requests ([#10](https://github.com/ethereumclassic/core-geth/pull/10)–[#36](https://github.com/ethereumclassic/core-geth/pull/36)), one per CVE with test coverage and linked CVE references, and cross-references the set in [issue #692](https://github.com/etclabscore/core-geth/issues/692) |
 | March 28, 2026 | [v1.12.22 "Hermes"](https://github.com/etclabscore/core-geth/releases/tag/v1.12.22) released at `etclabscore/core-geth` ([PR #696](https://github.com/etclabscore/core-geth/pull/696)): remaining CVE backports; Go 1.21 EOL toolchain unchanged, no ETC-specific modernization |
 | May 2026 | No further activity at `etclabscore/core-geth`; `ethereumclassic/core-geth` continues toward v1.13.0 |
 
@@ -399,7 +400,7 @@ Response messages are bounded by the request they answer rather than by a fixed 
 - **Patched:** ethereumclassic/core-geth v1.13.0
 - **Commit:** `6c2d383fa`
 
-**Disclosure:** Identified during cross-client security review, combining review of the published `graphql-go` advisory with direct inspection of `graphql/service.go`, which confirmed that no depth limit was configured at the application layer. No separate responsible disclosure to `etclabscore` was required as the dependency advisory was already public; the finding was included in the patch set submitted to `ethereumclassic/core-geth`.
+**Disclosure:** Identified by White B0x during cross-client security review, combining review of the published `graphql-go` advisory with direct inspection of `graphql/service.go`, which confirmed that no depth limit was configured at the application layer. No separate responsible disclosure to `etclabscore` was required as the dependency advisory was already public; the finding was included in the patch set submitted to `ethereumclassic/core-geth`.
 
 **Description:**
 The GraphQL endpoint (`--graphql` flag) had no query complexity or depth limit. Deeply nested queries (for example, a query recursively nesting block references) would cause the server to perform unbounded recursive schema traversal, exhausting CPU and memory on the serving node.
