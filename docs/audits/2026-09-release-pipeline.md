@@ -1,18 +1,20 @@
-# Release artifacts — v1.12.x archive to v1.13.0
+# Release artifacts: v1.12.x archive to v1.13.0
 
 This document records what the published `v1.12.x` releases actually contain, what
 `v1.13.0` ships instead, and why an operator on the older line should move. It is a
 companion to `2026-03-security-audit.md` and `2026-08-security-followup.md`, which
 cover source-level CVE remediation, and to `2026-08-dependency-modernization.md`,
 which covers the toolchain and module graph. This one covers the artifacts those
-produce — the files an operator downloads and runs.
+produce: the files an operator downloads and runs.
 
 **Baseline:** the four published releases `v1.12.20` through `v1.12.23`, measured by
 downloading and inspecting the archives rather than by reading the configuration that
 built them. `v1.12.20` (June 2024) is the last release before this repository was
 created from the archived development line; the other three were published in 2026.
 
-**On this page:** [Why the artifacts needed a pass of their own](#why-the-artifacts-needed-a-pass-of-their-own) · [The platform floor was lost across the v1.12.x releases](#finding-the-platform-floor-was-lost-across-the-v112x-releases) · [The macOS archive contains a binary most of its downloaders cannot run](#finding-the-macos-archive-contains-a-binary-most-of-its-downloaders-cannot-run) · [The v1.12.x line no longer builds against a C23 compiler](#finding-the-v112x-line-no-longer-builds-against-a-c23-compiler) · [The v1.12.x releases were published from outside this organization](#finding-the-v112x-releases-were-published-from-outside-this-organization) · [No container image was ever published from this repository](#finding-no-container-image-was-ever-published-from-this-repository) · [What a vulnerability scanner will say about these artifacts](#what-a-vulnerability-scanner-will-say-about-these-artifacts) · [How v1.13.0 sets its platform floor](#how-v1130-sets-its-platform-floor) · [What this means if you are upgrading](#what-this-means-if-you-are-upgrading) · [Verification](#verification) · [Outstanding](#outstanding)
+**Work carried out by:** [White B0x](https://whiteb0x.com)
+
+**On this page:** [Why the artifacts needed a pass of their own](#why-the-artifacts-needed-a-pass-of-their-own) · [The platform floor was lost across the v1.12.x releases](#finding-the-platform-floor-was-lost-across-the-v112x-releases) · [The macOS archive contains a binary most of its downloaders cannot run](#finding-the-macos-archive-contains-a-binary-most-of-its-downloaders-cannot-run) · [The v1.12.x line no longer builds against a C23 compiler](#finding-the-v112x-line-no-longer-builds-against-a-c23-compiler) · [The v1.12.x releases were published from outside this organization](#finding-the-v112x-releases-were-published-from-outside-this-organization) · [No container image was ever published from this repository](#finding-no-container-image-was-ever-published-from-this-repository) · [What a vulnerability scanner will say about these artifacts](#what-a-vulnerability-scanner-will-say-about-these-artifacts) · [How v1.13.0 sets its platform floor](#how-v1130-sets-its-platform-floor) · [What this means if you are upgrading](#what-this-means-if-you-are-upgrading) · [Verification](#verification) · [Outstanding](#outstanding) · [Supporting this work](#supporting-this-work)
 
 ## Why the artifacts needed a pass of their own
 
@@ -22,7 +24,7 @@ contains, and the two can disagree for a long time without anything reporting it
 The defects below are invisible in the source, in the build log, and in the release
 notes. The build succeeds, the tests pass, the archive is well-formed and correctly
 named, and the checksum matches. They are visible only by opening the published file
-and reading the binary inside — which is what this pass did, and which is why they had
+and reading the binary inside, which is what this pass did, and which is why they had
 survived across releases.
 
 ## Finding: the platform floor was lost across the v1.12.x releases
@@ -75,7 +77,7 @@ on one of them who followed the security guidance to upgrade could not run the r
 
 **`v1.13.0` requires GLIBC_2.17 on x86_64**, restoring every system above and matching
 the last release before this repository was created. Each Arm target is restored to the
-floor `v1.12.20` shipped for it — 2.17 on arm64, 2.28 on the 32-bit targets — and every
+floor `v1.12.20` shipped for it (2.17 on arm64, 2.28 on the 32-bit targets), and every
 one of them is checked at build time.
 
 **The difference that matters is not the number but how it is held.** `v1.12.20`'s 2.17
@@ -112,7 +114,7 @@ name.
 This affects anyone who builds rather than downloads, including a distributor producing
 their own packages.
 
-`v1.12.x` carries `blst` v0.3.11 — confirmed at both `v1.12.20` and `v1.12.23` — whose
+`v1.12.x` carries `blst` v0.3.11 (confirmed at both `v1.12.20` and `v1.12.23`), whose
 public header defines `bool` with a `typedef`, guarded only against C++ and pre-C99
 compilers. C23 makes `bool` a language keyword, so that definition became illegal. The
 build fails inside a vendored dependency's header, at a line no change in this repository
@@ -133,7 +135,7 @@ aged.
 ## Finding: the v1.12.x releases were published from outside this organization
 
 Every `v1.12.x` release was published from `etclabscore/core-geth`, the repository this
-one was created from, which sits outside this organization — `v1.12.23` was cut there in
+one was created from, which sits outside this organization. `v1.12.23` was cut there in
 August 2026. If you are running a `v1.12.x` binary today, that is where it came from, and
 three things follow:
 
@@ -148,7 +150,7 @@ three things follow:
   it was built from rests entirely on the publisher's assertion.
 
 **Of the three findings above, the floor regression is the only one drawn on the handoff
-boundary — and there it is exact.** `7ef3ecd7a` (2024-12-16) is the last commit on the
+boundary, and there it is exact.** `7ef3ecd7a` (2024-12-16) is the last commit on the
 predecessor's master before this repository was created on 2024-12-21; the tag
 `archive/etclabscore-2024-12` marks it. `v1.12.20`, published June 2024 and the last
 release before that boundary, carries a 2.17 Linux floor and the Arm floors `v1.13.0`
@@ -157,7 +159,7 @@ maintenance had moved here. **Nothing that was handed over introduced it.**
 
 **The other two findings are older, and are not drawn on that boundary.** The macOS archive
 has contained an arm64 binary under an architecture-free name across all four releases
-measured, and `blst` v0.3.11 is carried by the whole `v1.12.x` line — confirmed at both
+measured, and `blst` v0.3.11 is carried by the whole `v1.12.x` line, confirmed at both
 ends of it. Both predate the handoff, and neither follows from it.
 
 **`v1.13.0` is published from this repository, and every archive carries a build
@@ -167,7 +169,7 @@ anyone's word.
 
 The attestation is minted against a short-lived certificate issued to the workflow run
 itself, so no signing key is stored anywhere and none can be stolen. It records which
-workflow, at which commit, produced a given file — the question a checksum cannot answer.
+workflow, at which commit, produced a given file: the question a checksum cannot answer.
 You can check it yourself against a downloaded archive:
 
 ```bash
@@ -178,7 +180,7 @@ What the guarantee still rests on is control of the release tag, recorded below.
 
 ## Finding: no container image was ever published from this repository
 
-`2026-08-dependency-modernization.md` records the cause — `build/ci.go` carried a
+`2026-08-dependency-modernization.md` records the cause: `build/ci.go` carried a
 complete image-publishing implementation that nothing ever called. The images under
 the previous namespace came from a registry-side integration configured outside the
 source tree, so the capability was absent rather than broken, and nothing in the
@@ -190,7 +192,7 @@ into a multi-architecture manifest. Two variants are published: the client alone
 and `alltools-` carrying the full set of executables.
 
 **`:latest` is reserved for full releases.** It is what a bare `docker pull`
-resolves to, so a release candidate must never take it — an operator who omits a
+resolves to, so a release candidate must never take it. An operator who omits a
 tag is asking for the current stable client, not the newest thing that exists. The
 tag is applied only when the version carries no prerelease suffix:
 
@@ -199,8 +201,8 @@ v1.13.0        -> also tagged :latest
 v1.13.0-rc1    -> published under its own name only
 ```
 
-That rule is explicit rather than inferred. The mechanism it replaces —
-`docker/metadata-action`'s `latest=auto` — reads as though it withholds the moving
+That rule is explicit rather than inferred. The mechanism it replaces
+(`docker/metadata-action`'s `latest=auto`) reads as though it withholds the moving
 tag from a prerelease and does not: `auto` keys off the tag-ref rule, which has no
 concept of one. Measured during a pipeline rehearsal, where a build named
 `pipeline-test` was published as `:latest`. A defect of this shape is invisible in
@@ -212,7 +214,7 @@ a green pipeline and visible only in what an untagged pull returns.
 that are already fixed in it.** This is expected, and it is worth understanding
 before it is read as a finding.
 
-The Go module path is deliberately `github.com/ethereum/go-ethereum` — that is what
+The Go module path is deliberately `github.com/ethereum/go-ethereum`. That is what
 makes this a drop-in downstream, and changing it would break every consumer. A
 binary scanner reads the module version out of the build and resolves it to a
 go-ethereum pseudo-version, which sorts *below* every upstream tag that fixed
@@ -226,8 +228,8 @@ the release.
 Two consequences worth holding:
 
 - **An exit status of 0 from such a scan is a change, not a pass.** Findings are
-  expected here. An advisory *disappearing* is as much a signal as one appearing —
-  it means either the adjudication has gone stale or the artifact scanned is not
+  expected here. An advisory *disappearing* is as much a signal as one appearing.
+  It means either the adjudication has gone stale or the artifact scanned is not
   the one that was adjudicated.
 - **Each match is confirmed by reading the guard in this tree**, not by comparing
   version strings. `2026-08-dependency-modernization.md` records the adjudicated
@@ -235,7 +237,7 @@ Two consequences worth holding:
 
 **The client's own `version-check` command is a separate matter and used to be
 wrong in the other direction.** It queries go-ethereum's feed, whose patterns begin
-`Geth/` without a leading anchor — and this client identifies as `Core-Geth/`,
+`Geth/` without a leading anchor, and this client identifies as `Core-Geth/`,
 which contains `Geth`. An operator running the built-in checker on a fresh release
 was told, falsely, that it carried a High-severity advisory. Fixed by requiring the
 match to begin at the start of the version string; a genuine go-ethereum version
@@ -259,7 +261,7 @@ nothing checked; a fix with no check is a defect waiting to recur.
 
 ### Why the compiler is the lever
 
-The obvious alternative — build without cgo and link statically — is not available in
+The obvious alternative (build without cgo and link statically) is not available in
 either line. Two packages require it unconditionally:
 
 - `github.com/ethereum/evmc/v7/bindings/go/evmc` excludes all of its Go files when cgo
@@ -273,8 +275,8 @@ among several.
 
 ## What this means if you are upgrading
 
-- **If you run a distribution with glibc older than 2.34** — Ubuntu 20.04, Debian 11,
-  RHEL 8, Amazon Linux 2 among them — no `v1.12.x` release after `v1.12.20` runs on your
+- **If you run a distribution with glibc older than 2.34** (Ubuntu 20.04, Debian 11,
+  RHEL 8, Amazon Linux 2 among them), no `v1.12.x` release after `v1.12.20` runs on your
   system. `v1.13.0` does.
 - **If you run an Intel Mac**, none of the four `osx` archives measured here is for your
   machine. `v1.13.0` publishes one that is, under the same name.
@@ -306,7 +308,7 @@ Each check below was calibrated so that it could report a negative:
 
 **One claim is not a measurement of ours, and is marked rather than blended in.** The
 `blst` headers were read directly at both versions, and the version each line carries was
-confirmed at the `v1.12.20` and `v1.12.23` release tags — that part is measured, as is the
+confirmed at the `v1.12.20` and `v1.12.23` release tags. That part is measured, as is the
 Alpine Docker failure this project met itself. That current Windows images also default to
 C23 is taken from a reported build failure against `blst.h:27` and was not reproduced on a
 Windows image here. The remedy does not depend on which toolchain you meet it with:
@@ -318,8 +320,20 @@ Windows image here. The remedy does not depend on which toolchain you meet it wi
   is a separate mechanism from attesting a file, and it has not been applied here.
 - **Container package visibility is a registry setting, not a repository one.** A registry
   creates a new package private by default, so the first published image is unreachable
-  until someone makes it public — and making it public is the moment every tag it carries
+  until someone makes it public, and making it public is the moment every tag it carries
   starts serving real traffic. Check what `:latest` points at before flipping it, not
   after.
 - **The container base images are floating tags**, carried forward from the dependency
   pass, where the same objection is recorded.
+
+## Supporting this work
+
+The release work this document records was carried out by
+[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
+Donations and retroactive grants are welcome: contact White B0x through the form at
+<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
+below, which receives on any EVM-compatible chain:
+
+```
+0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
+```

@@ -1,12 +1,13 @@
-# Core-Geth Security Follow-Up — August 2026
+# Core-Geth Security Follow-Up: August 2026
 
 - **Follows:** [`2026-03-security-audit.md`](./2026-03-security-audit.md)
 - **Subject:** `etclabscore/core-geth` v1.12.23 ("Argos"), released 14 August 2026
 - **Prepared by:** The core-geth Authors
+- **Work carried out by:** [White B0x](https://whiteb0x.com)
 - **Method:** direct measurement against `etclabscore/core-geth` at tag `v1.12.23`, and
   against the advisory records at OSV and the GitHub Advisory Database
 
-**On this page:** [What operators need to do](#what-operators-need-to-do) · [Summary](#summary) · [What v1.12.23 contains](#what-v11223-contains) · [What v1.12.23 does not change](#what-v11223-does-not-change) · [One response cap in v1.12.23 can still reject honest peers](#finding-one-response-cap-in-v11223-can-still-reject-honest-peers) · [CVE identifier reconciliation](#cve-identifier-reconciliation) · [Status of v1.13.0](#status-of-v1130) · [References](#references)
+**On this page:** [What operators need to do](#what-operators-need-to-do) · [Summary](#summary) · [What v1.12.23 contains](#what-v11223-contains) · [What v1.12.23 does not change](#what-v11223-does-not-change) · [One response cap in v1.12.23 can still reject honest peers](#finding-one-response-cap-in-v11223-can-still-reject-honest-peers) · [CVE identifier reconciliation](#cve-identifier-reconciliation) · [Status of v1.13.0](#status-of-v1130) · [Supporting this work](#supporting-this-work) · [References](#references)
 
 ---
 
@@ -88,7 +89,7 @@ node size validation), `#32210` (announcement drop logic), `#30918` (prevent han
 dispatch).
 
 **The delayed-decoding refactor is adaptable to core-geth.** go-ethereum's `rlp.RawList`
-approach does not cherry-pick cleanly onto this codebase — 13 merge conflicts — and
+approach does not cherry-pick cleanly onto this codebase (13 merge conflicts), and
 v1.12.23 shows it can nonetheless be carried across with manual work.
 
 ---
@@ -140,7 +141,7 @@ with a comment deriving the AccountRange figure from the request tracker's byte 
 with a `hardLimit` of `req.Bytes * (1 + stateLookupSlack)` above it. Neither is an item count.
 A storage slot costs a hash plus its value, so at least 33 bytes on the wire, and a 512 KiB
 budget therefore admits on the order of **15,900 slots** before the byte bound stops the
-server — against a cap of **10,240**.
+server, against a cap of **10,240**.
 
 The two caps that remain item-derived are correct: `ByteCodesMsg` and `TrieNodesMsg` are
 genuinely capped server-side at `maxCodeLookups` and `maxTrieNodeLookups`, so those numbers
@@ -187,7 +188,7 @@ underlying fix shipped in v1.12.22. Both issues are in fact addressed there.
 
 ## Status of v1.13.0
 
-v1.13.0 is being prepared at
+v1.13.0 is released from
 [`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth), the repository
 created on 21 December 2024 under the GitHub organization that also hosts the ECIP
 repository. It is where contributions and release artifacts for this series belong. ETC
@@ -200,9 +201,23 @@ the current release series. The network is migrating to [Fukuii](https://fukuii.
 ETC-native execution client.
 
 **Recommendation for operators is unchanged in direction and updated in target.** Nodes on
-v1.12.20 or earlier should upgrade immediately; v1.12.23 is the latest release there and
-is a safer position than v1.12.20 on both the cryptographic and p2p surfaces. It does not
-resolve the toolchain exposure. Track `ethereumclassic/core-geth` for v1.13.0.
+any v1.12.x release should upgrade to v1.13.0 from `ethereumclassic/core-geth` immediately.
+v1.12.23 is a safer position than v1.12.20 on both the cryptographic and p2p surfaces, and it
+does not resolve the toolchain exposure.
+
+---
+
+## Supporting this work
+
+This follow-up and the v1.13.0 remediation it reports were carried out by
+[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
+Donations and retroactive grants are welcome: contact White B0x through the form at
+<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
+below, which receives on any EVM-compatible chain:
+
+```
+0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
+```
 
 ---
 

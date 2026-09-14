@@ -1,4 +1,4 @@
-# Dependency and toolchain modernization — v1.12.x archive to v1.13.x
+# Dependency and toolchain modernization: v1.12.x archive to v1.13.x
 
 This document records the dependency and toolchain changes that take Core-Geth
 from its December 2024 archive state to the `v1.13.x` line. It is a companion to
@@ -8,13 +8,15 @@ source-level CVE remediation; this one covers what changed underneath the code.
 **Baseline:** commit `7ef3ecd7a`, 2024-12-16, the last commit of the archived
 `v1.12.x` development line.
 
-**On this page:** [Why this work was necessary](#why-this-work-was-necessary) · [Toolchain](#toolchain) · [Dependency delta](#dependency-delta) · [What deliberately did not move](#what-deliberately-did-not-move) · [Linter](#linter) · [Build and release pipeline](#build-and-release-pipeline) · [Verification](#verification) · [Outstanding](#outstanding)
+**Work carried out by:** [White B0x](https://whiteb0x.com)
+
+**On this page:** [Why this work was necessary](#why-this-work-was-necessary) · [Toolchain](#toolchain) · [Dependency delta](#dependency-delta) · [What deliberately did not move](#what-deliberately-did-not-move) · [Linter](#linter) · [Build and release pipeline](#build-and-release-pipeline) · [Verification](#verification) · [Outstanding](#outstanding) · [Supporting this work](#supporting-this-work)
 
 ## Why this work was necessary
 
 The archived line was pinned to Go 1.21 across every build surface. Under Go's
-support policy — *"each major Go release is supported until there are two newer
-major releases"* — Go 1.21 left support in 2024, so every artifact built from that
+support policy (*"each major Go release is supported until there are two newer
+major releases"*), Go 1.21 left support in 2024, so every artifact built from that
 line shipped a standard library receiving no security fixes.
 
 That failure mode is silent. An end-of-life toolchain still compiles, still passes
@@ -34,7 +36,7 @@ than triggered by an incident.
 
 There is no `toolchain` directive; the `go` directive is the whole statement.
 
-Three Go versions were in force simultaneously on the archived line — 1.21 in CI,
+Three Go versions were in force simultaneously on the archived line: 1.21 in CI,
 1.22.1 for the `-dlgo` download path, and 1.22 in the Docker builder. They now
 agree.
 
@@ -107,7 +109,7 @@ The remaining nine arrived transitively behind modules that were updated:
 | `github.com/stretchr/testify` | v1.8.4 | v1.11.1 |
 | `github.com/tidwall/gjson` | v1.6.0 | v1.18.0 |
 
-Four of these carry consensus weight — `gnark-crypto`, `go-kzg-4844`, `blst` and
+Four of these carry consensus weight: `gnark-crypto`, `go-kzg-4844`, `blst` and
 `uint256`. Each was read before being taken rather than accepted on version number
 alone, and the elliptic-curve and KZG changes were checked against the consensus
 test suites named under Verification below.
@@ -157,13 +159,13 @@ upstream go-ethereum has since moved to a different module path
 (`c-kzg-4844/v2`), so catching up is an import-path migration rather than a version
 change. That belongs in its own release.
 
-**The Verkle modules — `go-ipa` and `go-verkle` — remain at their archived
+**The Verkle modules (`go-ipa` and `go-verkle`) remain at their archived
 versions.** Verkle trees are not live on any Ethereum network, including Ethereum
 Classic, and both modules are pre-1.0 upstream.
 
 **`crypto/secp256k1/libsecp256k1` is unchanged and is tracked as outstanding
 work.** It is vendored C, not a Go module, so it is invisible to `go list`,
-`go.sum` and `govulncheck` by construction — and on a normal cgo build it, rather
+`go.sum` and `govulncheck` by construction, and on a normal cgo build it, rather
 than the Go elliptic-curve libraries, is the active signature-verification path.
 Its last content synchronization predates this fork's divergence by years.
 Re-vendoring C that binds through cgo requires build and correctness verification
@@ -184,8 +186,8 @@ in force before.
 
 **`exportloopref` was replaced by `copyloopvar`,** which has a much wider surface:
 it reports every now-unnecessary `x := x` loop-variable copy, obsolete since Go
-1.22 changed loop scoping. Those 35 were taken rather than suppressed — the copies
-are dead weight in a tree targeting Go 1.26 — along with the comments explaining
+1.22 changed loop scoping. Those 35 were taken rather than suppressed (the copies
+are dead weight in a tree targeting Go 1.26), along with the comments explaining
 them, which described a copy that no longer existed.
 
 **Several existing exclusions had silently stopped matching.** staticcheck v2
@@ -196,14 +198,14 @@ than a missing one: it looks like a considered decision while doing nothing.
 
 Fixed rather than excluded:
 
-- **`crypto/bn256/cloudflare/gfp_decl.go`** — `// go:noescape` carried a space, so
+- **`crypto/bn256/cloudflare/gfp_decl.go`**: `// go:noescape` carried a space, so
   the compiler directive was inert and `gfpNeg` silently lost it. Its three
   siblings in the same file were correct.
-- **`core/vm/evmc.go`** — an assignment to `status` that every path below returns
+- **`core/vm/evmc.go`**: an assignment to `status` that every path below returns
   past.
 - **`reflect.PtrTo` to `reflect.PointerTo`** across `rlp/`, deprecated since Go
   1.22. These were masked by the `govet` `inline` analyzer, which reports where a
-  call could not be inlined — a compiler diagnostic, not a defect, and one that
+  call could not be inlined: a compiler diagnostic, not a defect, and one that
   fired only because the linter binary is built against a newer Go than this
   module targets. Disabling it surfaced the real findings underneath.
 - An `S1009` redundant nil check, an `S1011` append loop, and assorted stray
@@ -260,7 +262,7 @@ the *next* release would have been the first Arm64 one. Measured directly from t
 published archives afterwards, the switch happened at **v1.12.20** (June 2024):
 `v1.12.19` contains an x86_64 binary and every release from `v1.12.20` through
 `v1.12.23` contains an Arm64 one, all four under the same architecture-free `osx`
-name. So the defect was not caught before it shipped — it had shipped four times.
+name. So the defect was not caught before it shipped. It had shipped four times.
 `2026-09-release-pipeline.md` carries the measurement. The remedy described above is
 unchanged and correct; only the claim about when it was caught was wrong.
 
@@ -335,6 +337,18 @@ comparing version strings.
   upstream, so it is a trade to weigh rather than an oversight.
 
 Dependency automation is configured and deliberately disabled; `.github/dependabot.yml`
-and `AGENTS.md` carry that decision and its rationale. Go's own tooling —
-`go list -m -u all` for retractions and `govulncheck` for advisories — is what is
+and `AGENTS.md` carry that decision and its rationale. Go's own tooling
+(`go list -m -u all` for retractions and `govulncheck` for advisories) is what is
 run against this repository, by hand.
+
+## Supporting this work
+
+The modernization this document records was carried out by
+[White B0x](https://whiteb0x.com) as unfunded public-goods work for Ethereum Classic.
+Donations and retroactive grants are welcome: contact White B0x through the form at
+<https://whiteb0x.com> or at <contact@whiteb0x.com>, or donate directly to the address
+below, which receives on any EVM-compatible chain:
+
+```
+0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
+```
