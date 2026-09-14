@@ -12,11 +12,10 @@ platform, including Windows and Docker, and the flags for each kind of node.
 `geth` is the whole node. Ethereum Classic is proof of work, so there is no consensus client or
 beacon node to run beside it, and no JWT secret to configure.
 
-The Engine API, the interface Ethereum's consensus clients use, still starts. It listens on
-`127.0.0.1:8551` and writes its own secret to `<datadir>/geth/jwtsecret` on first start. Ethereum
-Classic has no merge, so nothing needs it. Never publish that port, and give each node on a host
-its own `--authrpc.port`
-([two nodes on one host](run-mordor-node.md#mordor-beside-ethereum-classic-on-one-host)).
+The Engine API, the interface Ethereum's consensus clients use, starts only on a chain configured for
+the merge, and neither Ethereum Classic nor Mordor is. The node opens no port 8551 and writes no JWT
+secret. Given `--authrpc.addr`, `--authrpc.port`, `--authrpc.vhosts` or `--authrpc.jwtsecret`, it logs
+that it ignored them.
 
 ## Before you start
 
@@ -55,7 +54,6 @@ Fatal: Failed to register the Ethereum service: database contains incompatible g
 | `geth/chaindata/` | The chain database |
 | `geth/chaindata/ancient/` | Older headers, bodies and receipts, kept as flat files |
 | `geth/nodekey` | The node's private key, which sets its identity on the network; written on first start |
-| `geth/jwtsecret` | The Engine API secret; written on first start |
 | `geth/nodes/` | The database of other nodes this node has found |
 | `geth/etchash/` | Etchash verification caches, written during sync |
 | `geth/blobpool/`, `geth/transactions.rlp` | Transaction pool state |
@@ -89,11 +87,7 @@ INFO [09-13|08:13:50.497] Initialising Ethereum protocol           network=1 dbv
 INFO [09-13|08:13:50.502] Writing custom genesis block
 WARN [09-13|08:13:50.986] Failed to load snapshot                  err="missing or corrupted snapshot"
 INFO [09-13|08:13:50.988] Rebuilding state snapshot
-WARN [09-13|08:13:51.036] Engine API enabled                       protocol=eth
-WARN [09-13|08:13:51.036] Engine API started but chain not configured for merge yet
 INFO [09-13|08:13:51.048] IPC endpoint opened                      url=<datadir>/geth.ipc
-INFO [09-13|08:13:51.048] Generated JWT secret                     path=<datadir>/geth/jwtsecret
-INFO [09-13|08:13:51.049] HTTP server started                      endpoint=127.0.0.1:8551 auth=true prefix= cors=localhost vhosts=localhost
 ```
 
 - `Starting Core-Geth on Ethereum Classic...` names the network.
@@ -103,8 +97,6 @@ INFO [09-13|08:13:51.049] HTTP server started                      endpoint=127.
 - `Writing custom genesis block` appears once, on a new data directory.
 - `Failed to load snapshot` is expected on a new data directory: it has no state snapshot yet, so
   the node starts building one.
-- The two Engine API warnings and the listener on `127.0.0.1:8551` appear on every start
-  ([what this runs](#what-this-runs-and-what-it-does-not-need)).
 - `IPC endpoint opened` gives the socket that `geth attach` connects to.
 
 **Syncing:**
@@ -154,7 +146,6 @@ A first sync logs many of these. None of them stops it.
 | Line | Level | Why it appears |
 | --- | --- | --- |
 | `Failed to load snapshot` | WARN | A new data directory has no state snapshot, so the node builds one |
-| `Engine API enabled`, `Engine API started but chain not configured for merge yet` | WARN | The Engine API starts on every node, and Ethereum Classic has no merge configured |
 | `Pivot seemingly stale, moving` | WARN | The chain moved on while the state downloaded, so the node moved its sync target forward |
 | `Synchronisation failed, dropping peer` | WARN | Syncing from one peer failed, for example with `err=timeout`, and the node dropped that peer |
 

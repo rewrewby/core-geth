@@ -42,7 +42,7 @@ command below is written for them:
   from the chain ID anyway, but its first log line reads `Starting Core-Geth on Ethereum Classic...`.
 
 **Every node on one machine needs its own ports.** A node started on a port another node holds
-exits with `bind: address already in use`, for `--port` and `--authrpc.port` alike. The ports on
+exits with `bind: address already in use`. The ports on
 this page are arbitrary, and stay clear of the ports a node takes by default
 ([Ports and listeners](../operate/security.md#ports-and-listeners)).
 
@@ -145,7 +145,7 @@ We recommend using a regular node as bootstrap node for production deployments.
 In a new terminal, start `node1`, pointed at the bootnode:
 
 ```bash
-geth --datadir node1 --networkid 12345 --port 30502 --authrpc.port 18601 --nat none --bootnodes "<enode>" --discovery.dns ""
+geth --datadir node1 --networkid 12345 --port 30502 --nat none --bootnodes "<enode>" --discovery.dns ""
 ```
 
 **Quote the `enode` URL.** It contains `?`, and zsh, by default, refuses to run a command with an
@@ -179,7 +179,7 @@ Path of the secret key file: node2/keystore/UTC--2026-09-13T08-27-31.511586361Z-
 Then, in another terminal, start `node2`:
 
 ```bash
-geth --datadir node2 --networkid 12345 --port 30503 --authrpc.port 18602 --nat none --bootnodes "<enode>" --discovery.dns "" \
+geth --datadir node2 --networkid 12345 --port 30503 --nat none --bootnodes "<enode>" --discovery.dns "" \
   --mine --miner.threads=1 --miner.etherbase=<address>
 ```
 
@@ -318,14 +318,14 @@ INFO [09-13|02:38:44.008] Wrote genesis block OK                   config="Chain
 Start a bootnode as in [step 3](#3-start-a-bootnode). Then, in a new terminal, start `signer1`:
 
 ```bash
-geth --datadir signer1 --networkid 12345 --port 30502 --authrpc.port 18601 --nat none --bootnodes "<enode>" --discovery.dns "" \
+geth --datadir signer1 --networkid 12345 --port 30502 --nat none --bootnodes "<enode>" --discovery.dns "" \
   --mine --miner.etherbase=<signer1 address> --unlock <signer1 address> --password signer1/password.txt
 ```
 
 In another terminal, start `signer2`:
 
 ```bash
-geth --datadir signer2 --networkid 12345 --port 30503 --authrpc.port 18602 --nat none --bootnodes "<enode>" --discovery.dns "" \
+geth --datadir signer2 --networkid 12345 --port 30503 --nat none --bootnodes "<enode>" --discovery.dns "" \
   --mine --miner.etherbase=<signer2 address> --unlock <signer2 address> --password signer2/password.txt
 ```
 

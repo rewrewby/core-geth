@@ -111,17 +111,15 @@ Fatal: Error starting protocol stack: invalid peer config: light peer count (100
 Fatal: Error starting protocol stack: listen tcp :<port>: bind: address already in use
 ```
 
-For the Engine API, HTTP or WebSocket port, an error line comes first:
+For the HTTP or WebSocket port, an error line comes first:
 
 ```
 ERROR[..] Failed to open RPC endpoints             error="listen tcp 127.0.0.1:<port>: bind: address already in use"
 Fatal: Error starting protocol stack: listen tcp 127.0.0.1:<port>: bind: address already in use
 ```
 
-- **Why:** another process on the host holds the port, often a second node. Every node opens an
-  Engine API port
-  ([What this runs](../getting-started/run-classic-node.md#what-this-runs-and-what-it-does-not-need)),
-  so two nodes collide there even with HTTP and WebSocket off.
+- **Why:** another process on the host holds the port, often a second node using the same peer, HTTP
+  or WebSocket port.
 - **Check:** on Linux, `ss -lntup` lists the process that holds each port
   ([Ports and listeners](security.md#ports-and-listeners)).
 - **Fix:** give each node its own ports.

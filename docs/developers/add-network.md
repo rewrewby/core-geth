@@ -397,16 +397,16 @@ It prints the stored genesis, with the same values as `abc_genesis.json`.
 ## Start a node
 
 ```sh
-./build/bin/geth --datadir ./abc-datadir --networkid 4269 --nodiscover --port 30471 --authrpc.port 18571
+./build/bin/geth --datadir ./abc-datadir --networkid 4269 --nodiscover --port 30471
 ```
 
 - **`--networkid 4269`** sets the network ID. Without it, and with no network flag, the node takes its
   network ID from the genesis `chainId` rather than its `networkId`, and its first log line reads
   `Starting Core-Geth on Ethereum Classic...`.
 - **`--nodiscover`** keeps this node from looking for peers.
-- **`--port` and `--authrpc.port`** move the peer-to-peer and authenticated RPC listeners off their
-  [defaults](../operate/security.md#ports-and-listeners), so the node can run beside another node
-  on the same host.
+- **`--port`** moves the peer-to-peer listener off its
+  [default](../operate/security.md#ports-and-listeners), so the node can run beside another node on
+  the same host.
 
 Among its output:
 

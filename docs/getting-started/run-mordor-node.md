@@ -96,13 +96,12 @@ one listener:
 | --- | --- | --- | --- |
 | Peer connections (TCP) | `--port` | 30303 | 30304 |
 | Discovery (UDP) | follows `--port`; `--discovery.port` sets it separately | 30303 | 30304 |
-| Engine API | `--authrpc.port` | 8551 | 8552 |
 | HTTP JSON-RPC, with `--http` | `--http.port` | 8545 | 8547 |
 | WebSocket JSON-RPC, with `--ws` | `--ws.port` | 8546 | 8548 |
 | Metrics, with `--metrics` and `--metrics.addr` | `--metrics.port` | 6060 | 6070 |
 | Profiling, with `--pprof` | `--pprof.port` | 6060 | 6071 |
 
-A second node that reuses the first one's peer, Engine API, HTTP or WebSocket port exits at
+A second node that reuses the first one's peer, HTTP or WebSocket port exits at
 startup with `bind: address already in use`
 ([Troubleshooting](../operate/troubleshooting.md#why-does-the-node-stop-with-bind-address-already-in-use)).
 A metrics port that is already taken does not stop
@@ -115,7 +114,7 @@ otherwise share:
 
 ```shell
 $ geth --classic --datadir <classic-datadir> --http
-$ geth --mordor --datadir <mordor-datadir> --port 30304 --authrpc.port 8552 --http --http.port 8547
+$ geth --mordor --datadir <mordor-datadir> --port 30304 --http --http.port 8547
 ```
 
 On Linux and macOS, each node's IPC socket is inside its own data directory. On Windows, every

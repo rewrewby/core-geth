@@ -13,13 +13,16 @@ which. Before a binary runs on a node that holds value,
 | --- | --- | --- | --- | --- |
 | Peer connections, TCP | `--port`, 30303 | every interface | yes | yes |
 | Peer discovery, UDP | `--discovery.port`, 30303; without it, follows `--port` | every interface | yes, unless `--nodiscover` | yes |
-| Engine API, TCP | `--authrpc.port`, 8551 | `localhost` (`--authrpc.addr`) | yes | no |
 | HTTP JSON-RPC, TCP | `--http.port`, 8545 | `localhost` (`--http.addr`) | no: `--http` | no |
 | GraphQL | none: it answers at `/graphql` on the HTTP listener | the HTTP listener's | no: `--graphql`, which needs `--http` | no |
 | WebSocket JSON-RPC, TCP | `--ws.port`, 8546 | `localhost` (`--ws.addr`) | no: `--ws` | no |
 | Metrics, TCP | `--metrics.port`, 6060 | none: `--metrics.addr` sets it | no: `--metrics` and `--metrics.addr` | no |
 | Profiling (pprof), TCP | `--pprof.port`, 6060 | `127.0.0.1` (`--pprof.addr`) | no: `--pprof` | no |
 | IPC | `--ipcpath`, `geth.ipc` | a socket in the data directory; a named pipe on Windows | yes, unless `--ipcdisable` | no |
+
+The Engine API, the authenticated interface Ethereum consensus clients use, starts only on a chain
+configured for the merge, which no network built into the client is. There it listens on `localhost`,
+port 8551, set by `--authrpc.addr` and `--authrpc.port`.
 
 `localhost` means the node listens on `127.0.0.1`. Metrics and pprof share a default port, so a node
 that runs both needs one of them moved. On Linux and macOS the IPC socket can be opened only by the
@@ -31,12 +34,11 @@ On Linux, `ss` lists what each process listens on:
 $ ss -lntup
 ```
 
-A node with the default settings has three lines, for peer connections and discovery on every
-interface and for the Engine API:
+A node with the default settings has two lines, for peer connections and discovery on every
+interface:
 
 ```
 udp UNCONN 0      0                                          *:30303       *:* users:(("geth",pid=<pid>,fd=70))
-tcp LISTEN 0      4096                               127.0.0.1:8551  0.0.0.0:* users:(("geth",pid=<pid>,fd=81))
 tcp LISTEN 0      4096                                       *:30303       *:* users:(("geth",pid=<pid>,fd=67))
 ```
 
