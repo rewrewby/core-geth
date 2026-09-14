@@ -144,7 +144,7 @@ USAGE:
    geth [global options] command [command options]
 
 VERSION:
-   1.13.0-RC7-176eb0af-20260914
+   1.13.0-stable-0188b8fd
 
 COMMANDS:
    account                Manage accounts
