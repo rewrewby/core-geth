@@ -287,6 +287,15 @@ func TestDefaultGenesisFor(t *testing.T) {
 			t.Errorf("%s: returned chain ID %v, want nil so the stored chain is used", test.name, genesis.Config.GetChainID())
 		}
 	}
+	// A Mordor or MintMe database opened without its network flag gets its own bundled
+	// genesis, so the consensus engine takes that network's schedule. It once got nil.
+	for _, gen := range []*genesisT.Genesis{params.DefaultMordorGenesisBlock(), params.DefaultMintMeGenesisBlock()} {
+		db := rawdb.NewMemoryDatabase()
+		MustCommitGenesis(db, triedb.NewDatabase(db, nil), gen)
+		if got := DefaultGenesisFor(db); got == nil || !reflect.DeepEqual(got.Config, gen.Config) {
+			t.Errorf("chain ID %v: want its bundled genesis returned", gen.Config.GetChainID())
+		}
+	}
 }
 
 // classicConfigBeforeSpiral returns the Ethereum Classic chain config as a

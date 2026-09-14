@@ -227,8 +227,9 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 }
 
 // DefaultGenesisFor returns the genesis a node uses for db when no network was
-// chosen: Ethereum Classic's, unless db already holds another chain, in which
-// case it returns nil and the stored chain is used as it is.
+// chosen: Ethereum Classic's; Mordor's or MintMe's when db already holds that
+// chain, so the consensus engine takes its schedule; and nil for any other stored
+// chain, which is then used as it is.
 //
 // Ethereum forked from Ethereum Classic at the DAO fork, so a stored genesis
 // hash cannot tell the two apart; the stored chain ID does. A database with no
@@ -240,7 +241,14 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 func DefaultGenesisFor(db ethdb.Database) *genesisT.Genesis {
 	stored := rawdb.ReadCanonicalHash(db, 0)
 	if stored != (common.Hash{}) {
-		if stored != params.MainnetGenesisHash {
+		switch stored {
+		case params.MordorGenesisHash:
+			return params.DefaultMordorGenesisBlock()
+		case params.MintMeGenesisHash:
+			return params.DefaultMintMeGenesisBlock()
+		case params.MainnetGenesisHash:
+			// Ethereum Classic or Ethereum; the stored chain ID below tells them apart.
+		default:
 			return nil
 		}
 		if storedcfg := rawdb.ReadChainConfig(db, stored); storedcfg != nil {
