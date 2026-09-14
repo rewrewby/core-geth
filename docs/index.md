@@ -17,12 +17,13 @@ are maintained here rather than inherited, which is what this client is for.
 
 | If you are | Go to |
 | --- | --- |
-| **Upgrading from v1.12.x** | [Migration guide](tutorials/v1.13.0-migration.md) — read this before you upgrade |
+| **Pages for your role** | [Choose your role](guides/index.md): miners, pools, exchanges, RPC providers and more |
+| **Upgrading from v1.12.x** | [Migration guide](tutorials/v1.13.0-migration.md): read this before you upgrade |
 | Running a node for the first time | [Installation](getting-started/installation.md), then [Command line](getting-started/run-cli.md) |
 | Building it yourself | [Build from source](developers/build-from-source.md) |
 | Reviewing what was audited | [The four audit reports](#what-was-audited) |
 
-!!! danger "The v1.12.x line is insecure — upgrade to v1.13.0"
+!!! danger "The v1.12.x line is insecure: upgrade to v1.13.0"
     Six CVEs and a GraphQL denial of service are documented against it, one of them
     exploited against Ethereum Classic bootnodes in March 2026.
 
@@ -73,13 +74,14 @@ a fork of an abandoned one.
 ## How long this client is for
 
 **The v1.13 series is the last for Core-Geth.** It exists to close the security gap and
-carry Ethereum Classic on a supported Go toolchain while the client is retired — not to
+carry Ethereum Classic on a supported Go toolchain while the client is retired, not to
 begin a new line of development. Plan on that horizon.
 
 On the wire this client speaks `eth/68`, and that is the version it will serve until it
-is retired. `eth/69` and later reach Ethereum Classic through [Fukuii](https://fukuii.org)
-and through the Ethereum Classic extensions maintained against mainstream Ethereum
-clients.
+is retired. Later versions are left to the clients that succeed it:
+[Fukuii](https://fukuii.org) is the preferred successor,
+and the migration guide's [Fukuii section](tutorials/v1.13.0-migration.md#migrating-to-fukuii)
+says when to move to it.
 
 ## Where releases come from
 
@@ -91,14 +93,14 @@ source and do not carry the fixes released here.
 ## What was audited
 
 Four reports, each measuring a different layer. Together they are the evidence for the
-paragraph above — no single one of them answers "what differs".
+paragraph above. No single one of them answers "what differs".
 
 | Report | What it measures |
 | --- | --- |
 | [March 2026 security audit](audits/2026-03-security-audit.md) | The six CVEs and the GraphQL denial of service, with the per-release breakdown |
-| [August 2026 security follow-up](audits/2026-08-security-followup.md) | `v1.12.23` measured at the tag against the advisory records — what it fixed and what it left open |
+| [August 2026 security follow-up](audits/2026-08-security-followup.md) | `v1.12.23` measured at the tag against the advisory records: what it fixed and what it left open |
 | [Dependency and toolchain modernization](audits/2026-08-dependency-modernization.md) | What changed underneath the code between the December 2024 archive and this release: the Go toolchain, 83 modules, the linter |
-| [Release artifacts](audits/2026-09-release-pipeline.md) | What the published archives actually contain — platform floors, architectures, provenance |
+| [Release artifacts](audits/2026-09-release-pipeline.md) | What the published archives actually contain: platform floors, architectures, provenance |
 
 The first three describe the source. **The last one describes the files you download**,
 and the two can disagree: a release is not what the build configuration says it builds.

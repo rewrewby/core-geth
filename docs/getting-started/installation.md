@@ -2,7 +2,7 @@
 title: Installation
 ---
 
-!!! danger "Security advisory — the v1.12.x line"
+!!! danger "Security advisory: the v1.12.x line"
     Core-Geth moved to
     [`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth) in
     December 2024. Archives and images under the previous `etclabscore` namespace are
@@ -34,9 +34,9 @@ need the others.
 
 | Your machine | Route |
 | --- | --- |
-| Linux, x86_64 — most servers and desktops | [Linux, x86_64](#linux-x86_64) |
-| Linux, 64-bit ARM — Raspberry Pi on a 64-bit OS, AWS Graviton, Ampere | [Linux, ARM](#linux-arm) |
-| Linux, 32-bit ARM — older Raspberry Pi and embedded boards | [Linux, ARM](#linux-arm) |
+| Linux, x86_64: most servers and desktops | [Linux, x86_64](#linux-x86_64) |
+| Linux, 64-bit ARM: Raspberry Pi on a 64-bit OS, AWS Graviton, Ampere | [Linux, ARM](#linux-arm) |
+| Linux, 32-bit ARM: older Raspberry Pi and embedded boards | [Linux, ARM](#linux-arm) |
 | macOS, Apple Silicon | [macOS](#macos) |
 | macOS, Intel | [macOS](#macos) |
 | Windows, x86_64 | [Windows](#windows) |
@@ -47,7 +47,7 @@ On Linux and macOS, `uname -sm` prints the operating system and machine architec
 which is what the rows above distinguish.
 
 **The executable is named `geth`.** `core-geth` appears throughout as the project,
-the repository, the container image and the archive filenames — there is no
+the repository, the container image and the archive filenames. There is no
 executable by that name.
 
 Every archive route ends with a `geth` on your `PATH`. Archives are attached to each
@@ -72,7 +72,7 @@ $ geth version
 `sha256sum -c` must print `OK`. If it prints `FAILED`, stop: delete the file and
 download it again rather than running it.
 
-**This archive needs glibc 2.31 or newer** — Debian 11, Ubuntu 20.04, RHEL 9 and
+**This archive needs glibc 2.31 or newer**: Debian 11, Ubuntu 20.04, RHEL 9 and
 anything more recent. `ldd --version` prints what you have. On an older distribution
 the binary will not start; [build from source](#build-from-source) there instead.
 
@@ -109,7 +109,7 @@ $ geth version
 ```
 
 A `core-geth-arm-<tag>.zip` is published as well. It is byte-identical to the `arm5`
-archive and exists only so that existing scripts referring to it keep working — use
+archive and exists only so that existing scripts referring to it keep working: use
 `arm5`.
 
 Before running it on a node that holds value, also
@@ -121,8 +121,8 @@ Two archives, chosen by processor:
 
 | `uname -m` prints | Download |
 | --- | --- |
-| `arm64` — Apple Silicon, M1 and later | `core-geth-osx-arm64-<tag>.zip` |
-| `x86_64` — Intel | `core-geth-osx-<tag>.zip` |
+| `arm64`: Apple Silicon, M1 and later | `core-geth-osx-arm64-<tag>.zip` |
+| `x86_64`: Intel | `core-geth-osx-<tag>.zip` |
 
 macOS has no `sha256sum`; use `shasum -a 256 -c`, which reads the same file.
 
@@ -188,7 +188,7 @@ $ gh attestation verify core-geth-linux-v1.13.0.zip --repo ethereumclassic/core-
 ```
 
 That needs the [GitHub CLI](https://cli.github.com/). It succeeds only for an artifact
-built by this repository's release workflow — an archive from anywhere else fails, as
+built by this repository's release workflow. An archive from anywhere else fails, as
 does one whose bytes have changed. No signing key is involved: the attestation is minted
 against a short-lived certificate issued to the workflow run itself, so there is no key
 to steal or rotate.
@@ -214,7 +214,7 @@ node alone, is published under the same name with an `alltools-` prefix, as
     Images published as `etclabscore/core-geth` on Docker Hub are not built from
     this source and receive nothing released here.
 
-You can also build an image yourself — the `Dockerfile` produces an image
+You can also build an image yourself. The `Dockerfile` produces an image
 containing `geth`, and `Dockerfile.alltools` one containing the full tool
 set:
 
@@ -239,7 +239,7 @@ $ docker run -d \
     --http --http.addr 0.0.0.0 --http.port 8545
 ```
 
-If you built the image yourself, use your own tag — `core-geth:local`, above — in
+If you built the image yourself, use your own tag (`core-geth:local`, above) in
 place of `ghcr.io/ethereumclassic/core-geth:latest`.
 
 That maps the devp2p port over both TCP and UDP, keeps chain data in
@@ -248,7 +248,7 @@ JSON-RPC endpoint from the host and nowhere else.
 
 !!! warning "Both halves of that RPC line are deliberate"
     `--http` alone binds the listener to `localhost` **inside the container**, while
-    Docker forwards a published port to the container's *external* interface — so
+    Docker forwards a published port to the container's *external* interface, so
     `-p 8545:8545` with the default address publishes a port that reaches nothing, and
     the RPC appears dead with no error explaining why.
 
@@ -292,6 +292,12 @@ Each platform publishes two archives:
 | `core-geth-<platform>-<tag>.zip` | the `geth` node binary alone |
 | `core-geth-alltools-<platform>-<tag>.zip` | `geth` plus the other tools built from this source |
 
-Every route above uses the first. Take the `alltools` archive if you also want
-`abigen`, `bootnode`, `clef`, `echainspec`, `evm` and `rlpdump`; it installs exactly
-the same way.
+Every route above uses the first. The `alltools` archive adds every other executable
+built from this source (`abidump`, `abigen`, `ancient-store-mem`, `bootnode`,
+`clef`, `devp2p`, `echainspec`, `era`, `ethkey`, `evm`, `p2psim` and `rlpdump`) and
+installs exactly the same way. Read the archive itself rather than this list if you
+need to be certain: the release ships whatever `make all` produced.
+
+Once `geth` is installed, [Run an Ethereum Classic node](run-classic-node.md) takes it to a
+synced node running as a service, and [Run a Mordor node](run-mordor-node.md) does the same
+on the test network.

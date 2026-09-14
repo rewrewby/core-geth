@@ -4,8 +4,8 @@ The trace module is for getting a deeper insight into transaction processing. It
 
 It's good to mention that `trace_*` methods are nothing more than aliases to some existing `debug_*` methods. The reason for creating those aliases, was to reach compatibility with OpenEthereum's (aka Parity) trace module, which has been requested by the community in order they can fully use core-geth. For achieving this, the `trace_*` methods set the default tracer to `callTracerParity` if none is set.
 
-!!! Note "Full sync"
-    In order to use the Transaction-Trace Filtering API, core-geth must be fully synced using `--syncmode=full --gcmode=archive`. Otherwise, you can set the number of blocks to `reexec` back for rebuilding the state, though taking longer for a trace call to finish.
+!!! Note "Older blocks need an archive node"
+    A trace needs the state of the block before the one it traces. A node on the default settings has that state for its most recent blocks only; [Archive node](../guides/archive-node.md#what-each-node-answers) covers tracing older blocks.
 
 ## JSON-RPC methods
 
@@ -25,13 +25,13 @@ These APIs allow you to get a full externality trace on any transaction executed
 
 - [x] trace_block *(alias to debug_traceBlock)*
 - [x] trace_transaction *(alias to debug_traceTransaction)*
-- [x] trace_filter (doesn't support address filtering yet)
+- [ ] trace_filter *(a plain call is refused; it is available as a subscription, `trace_subscribe` with `"filter"` over WebSocket or IPC, without address filtering)*
 - [ ] trace_get
 
 ## Available tracers
 
 - `callTracerParity` Transaction trace returning a response equivalent to OpenEthereum's (aka Parity) response schema. For documentation on this response value see [here](#calltracerparity).
-- `vmTrace` Virtual Machine execution trace. Provides a full trace of the VM’s state throughout the execution of the transaction, including for any subcalls. *(Not implemented yet)*
+- `vmTrace` Virtual Machine execution trace. Provides a full trace of the VM’s state throughout the execution of the transaction, including for any subcalls. *(not implemented)*
 - `stateDiffTracer` State difference. Provides information detailing all altered portions of the Ethereum state made due to the execution of the transaction. For documentation on this response value see [here](#statedifftracer).
 
 !!! Example "Example trace_* API method config (last method argument)"
@@ -39,8 +39,8 @@ These APIs allow you to get a full externality trace on any transaction executed
     ```js
     {
         "tracer": "stateDiffTracer",
-        "timeout: "10s",
-        "reexec: "10000",               // number of block to reexec back for calculating state
+        "timeout": "10s",
+        "reexec": 10000,               // number of block to reexec back for calculating state
         "nestedTraceOutput": true  // in Ad-hoc Tracing methods the response is nested similar to OpenEthereum's output
     }
     ```

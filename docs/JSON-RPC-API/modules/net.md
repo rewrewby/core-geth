@@ -7,7 +7,7 @@
 
 | Entity | Version |
 | --- | --- |
-| Source | <code>1.13.0-unstable/generated-at:2026-09-02T12:02:52-06:00</code> |
+| Source | <code>1.13.0-RC3/generated-at:2026-09-13T17:19:03-06:00</code> |
 | OpenRPC | <code>1.2.6</code> |
 
 ---

@@ -5,7 +5,19 @@ hide:
 
 # Running Geth with an External VM
 
-Geth supports the __[EVMC](https://github.com/ethereum/evmc/) VM connector API Version 7__ as an experimental feature. This interface provides support for external EVM and EWASM interpreters.
+Geth supports the __[EVMC](https://github.com/ipsilon/evmc) VM connector API Version 7__ as an experimental feature. This interface provides support for external EVM and EWASM interpreters.
+
+!!! danger "`--vm.evm` and `--vm.ewasm` are not supported on Ethereum Classic or Mordor"
+    `--vm.evm` replaces the built-in interpreter for ordinary EVM bytecode. `getRevision`
+    (shown below) returns no EVMC revision past Istanbul, and panics once EIP-2565 is
+    active: on Ethereum Classic at block 13,189,133
+    (`ClassicChainConfig.EIP2565FBlock`, `params/config_classic.go`) and on Mordor at
+    block 3,985,893 (`MordorChainConfig.EIP2565FBlock`, `params/config_mordor.go`). A
+    node already past that block panics on its first contract execution; a node syncing
+    from genesis panics on reaching it.
+
+    `--vm.ewasm` is also unsupported on both networks: EWASM is not part of either
+    network's consensus rules, and ordinary EVM bytecode does not execute through it.
 
 External interpreters can be configured on the command line via
 a `--vm.`-prefixed flag for normal instantiation, and `--evmc.` for testing.
@@ -22,8 +34,8 @@ Provided to these flags should be EWASM and EVM shared object libraries, as foll
 
 ## Testing EVMC Support
 
-This implementation may be tested by following the command defined in the Makefile as `evmc-test`, which
-tests the implementation against both of these mentioned EWASM libraries against the `/tests/` StateTest suite.
+This implementation may be tested by following the command defined in the Makefile as `test-evmc`, which
+tests the implementation against the EWASM and EVM libraries mentioned above, against the `/tests/` StateTest suite.
 
 These tests run exclusively via Github Actions, configured at `.github/workflows/evmc.yml`.
 
@@ -39,13 +51,15 @@ The following code snippet, taken from [`./core/vm/evmc.go`](https://github.com/
 ```go
 // getRevision translates ChainConfig's HF block information into EVMC revision.
 func getRevision(env *EVM) evmc.Revision {
-	n := env.BlockNumber
+	n := env.Context.BlockNumber
 	conf := env.ChainConfig()
 	switch {
 	// This is an example of choosing to use an "abstracted" idea
 	// about chain config, where I'm choosing to prioritize "indicative" features
 	// as identifiers for Fork-Feature-Groups. Note that this is very different
 	// than using Feature-complete sets to assert "did Forkage."
+	case conf.IsEnabled(conf.GetEIP2565Transition, n):
+		panic("berlin is unsupported by EVMCv7")
 	case conf.IsEnabled(conf.GetEIP1884Transition, n):
 		return evmc.Istanbul
 	case conf.IsEnabled(conf.GetEIP1283DisableTransition, n):

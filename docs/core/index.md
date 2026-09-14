@@ -4,83 +4,71 @@ title: About
 
 # Core-Geth
 
-Core-Geth is sponsored by and maintained with the leadership of [ETC Labs](https://etclabs.org) with an obvious core intention of stewarding
-the Ethereum Classic opinion that the reversion of transactions in inconvenient situations shouldn't be permissible. 
+Core-Geth is an Ethereum Classic execution client. It is a downstream of
+[ethereum/go-ethereum](https://github.com/ethereum/go-ethereum) that keeps chain configuration as
+data rather than code, so one `geth` binary runs the networks in the
+[Supported networks](../index.md#supported-networks) table, private networks among them.
+The README's [Project history](https://github.com/ethereumclassic/core-geth/blob/main/README.md#project-history)
+tells where the project came from.
 
-But the spirit of the project intends to reach beyond Ethereum and Ethereum Classic, and indeed to reimagine an EVM node software that 
-approaches the EVM-based protocols as technology that can -- and should -- be generalizable.
+This page lists what Core-Geth adds to go-ethereum, how its chain configuration is built, and what
+go-ethereum has that Core-Geth does not.
 
-While Core-Geth inherits from and exposes complete feature parity with Ethereum Foundation's <sup>:registered:</sup> [ethereum/go-ethereum](https://github.com/ethereum/go-ethereum),
-there are quite few things that make Core-Geth unique.
+## Additional features
 
-## Additional Features
+### JSON-RPC API
 
-Core-Geth maintainers are [regular](https://github.com/ethereum/go-ethereum/pulls?q=author%3Ameowsbits) [contributors](https://github.com/ethereum/go-ethereum/pulls?q=author%3Aziogaschr+) [upstream](https://github.com/ethereum/go-ethereum/pulls?q=author%3Aiquidus+), but not all Core-Geth features are practicable or accepted there. The following categories document features specific to Core-Geth that ethereum/go-ethereum can't, or won't, implement. 
+- **OpenRPC service discovery.** The `rpc.discover` method returns an
+  [OpenRPC](https://open-rpc.org/) document describing the client's methods, including some the
+  interface it answers on does not serve, with their parameters and results. See
+  [OpenRPC discovery](../JSON-RPC-API/openrpc.md).
+- **The `trace` module.** `trace_block`, `trace_transaction`, `trace_call` and `trace_callMany`
+  return trace entries in the format of OpenEthereum's trace module, and `trace_filter` works
+  only as a subscription. See the
+  [trace module overview](../JSON-RPC-API/trace-module-overview.md) and the
+  [`trace` method reference](../JSON-RPC-API/modules/trace.md).
 
-### Extended RPC API
+The [JSON-RPC API overview](../JSON-RPC-API/index.md) covers the rest of the API.
 
-#### Comprehensive RPC API Service Discovery
+### External EVMs through EVMC
 
-Core-Geth features a synthetic build/+runtime service discovery API, allowing you to get a [well structured](https://open-rpc.org/)
-description of _all_ available methods, their parameters, and results.
+Core-Geth implements version 7 of the [EVMC](https://github.com/ipsilon/evmc) connector API as an
+experimental feature. `--vm.evm` and `--vm.ewasm` load an external EVM or ewasm interpreter from a
+shared library, and neither is supported on Ethereum Classic or Mordor: see
+[Running Geth with an External VM](evmc.md).
 
-!!! tip "RPC Service Documentation"
-    For complete documentation of the available JSON RPC APIs, please see the [JSON RPC API page](../JSON-RPC-API/modules/eth.md).
+### Development and testing
 
-#### Additional methods and options
+- **`--dev.pow`** starts an ephemeral proof-of-work network with a pre-funded developer account. It
+  switches mining on with no CPU threads, so it seals no block unless `--miner.threads` is above 0;
+  `--fakepow.poisson --miner.threads 2` seals blocks without generating an Ethash DAG.
+- **`--fakepow.poisson`** disables proof-of-work verification and adds a Poisson mining delay based on
+  `--miner.threads`.
+- **`make test-coregeth`** runs the tests specific to Core-Geth, including imports of simulated
+  canonical chains. See [Testing](../developers/testing.md).
 
-- Available `trace_block` and `trace_transaction` RPC API congruent to the OpenEthereum API (including a 1000x performance improvement vs. go-ethereum's `trace_transaction` in some cases).
-    + _TODO:_ Talk more about this! And examples!
-- Added `debug_removePendingTransaction` API method ([#203](https://github.com/etclabscore/core-geth/pull/203/files))
-- Comprehensive service discovery with OpenRPC through method `rpc.discover`.
+### Ethereum Classic proposals
 
-### EVMCv7 Support
+Ethereum Classic's own proposals, ECIPs and ECBPs, are chain configuration fields of their own,
+alongside the EIPs. Among them:
 
-- EVMCv7 support allows use with external EVMs (including EWASM).
-- See [Running Core-Geth with an External VM](evmc.md) for more information.
+- ECIP-1010, the difficulty bomb pause: `ECIP1010PauseBlock` and `ECIP1010Length`
+- ECIP-1017, the monetary policy: `ECIP1017FBlock` and `ECIP1017EraRounds`
+- ECIP-1041, the difficulty bomb disposal: `DisposalBlock`
+- ECIP-1099, Etchash: `ECIP1099FBlock`
+- ECBP-1100, MESS (Modified Exponential Subjective Scoring): `ECBP1100FBlock`
 
-### Remote Store for Ancient Chaindata
+`CoreGethChainConfig` in `params/types/coregeth/chain_config.go` defines the fields, and
+`ClassicChainConfig` in `params/config_classic.go` sets Ethereum Classic's activation blocks.
 
-- Remote freezer, store your `ancient` data on Amazon S3 or Storj.
-    - _TODO_: Talk more about this, provide examples.
+## Divergent design
 
-### Extended CLI
+### Chain configuration by feature
 
-- `--eth.protocols` configures `eth/x` protocol prioritization, eg. `65,64,63`.
+At the code level, Core-Geth and go-ethereum differ in how code asks the chain configuration whether
+a feature is active.
 
-### Developer Features: Tools
-
-- A developer mode `--dev.pow` able to mock Proof-of-Work block schemas and production at representative Poisson intervals.
-  + `--dev.poisson` configures Poisson intervals for block emission
-- Chain configuration acceptance of OpenEthereum and go-ethereum chain configuration files (and the extensibility to support _any_ chain configuration schema).
-- At the code level, a 1:1 EIP/ECIP specification to implementation pattern; disentangling Ethereum Foundation :registered: hard fork opinions from code. This yields more readable code, more precise naming and conceptual representation, more testable code, and a massive step toward Ethereum as a generalizeable technology.
-- `copydb` will default to a sane fallback value if no parameter is passed for the second `<ancient/path>` argument.
-- The `faucet` command supports an `--attach` option allowing the program to reference an already-running node instance
-  (assuming it has an available RPC API) instead of restricting the faucet to a dedicated light client. Likewise, a `--syncmode=[full|fast|light]` option is provided for networks where _LES_ support may be lacking.
-
-### Risk Management
-
-- Chaindata regression testing against simulated canonical chains, run by `make test-coregeth`.
-
-### Extended _Improvement Proposal_ Support (EIP, ECIP, *IP)
-
-- Myriad additional ECIP support:
-  + ECBP1100 (aka MESS, an "artificial finality" gadget)
-  + ECIP1099 (DAG growth limit)
-  + ECIP1014 (defuse difficulty bomb), etc. :wink:
-
-- Out-of-the-box support for Ethereum Classic.
-  Chain configs are selected as `./build/bin/geth --<chain>`. For a list of supported networks and their CLI options, use `./build/bin/geth --help`.
-
-## Divergent Design
-
-How Core-Geth is built differently than ethereum/go-ethereum.
-
-### Developer Features: Code
-
-One of Core-Geth's most significant divergences from ethereum/go-ethereum at the code level is a reimagining (read: _massive overhaul_) of the `ChainConfig` data type and its methods.
-
-At _ethereum/go-ethereum_ the `ChainConfig` makes protocol-facing feature activation decisions as follows:
+In go-ethereum, it asks about a named upgrade:
 
 ```go
 blockNumber := big.NewInt(0)
@@ -90,75 +78,41 @@ if config.IsByzantium(blockNumber) {
 }
 ```
 
-This, for the uninitiated developer, raises some questions:
-- What's Byzantium?
-- Which of the nine distinct Byzantium upgrades is this implementing?
-- Does feature `Byzantium.X` depend on also having `Byzantium.Y` activated?
-
-The developers of ethereum/go-ethereum have made this architectural decision because ethereum/go-ethereum is _only designed
-and intended_ to support one chain: _Ethereum_. From this perspective, configurability presents a risk rather than a desirable feature.
-
-While a hardcoded feature-group pattern (ie _hardfork upgrades_) in some ways mitigates a risk of "movable parts," and undesirable or unintended feature interactions,
-it also presents a massive hurdle for extensibility.
-
-!!! seealso "A metaphor"
-    Consider the metaphor of the wiring the electrical circuits of a house. 
-    
-    With ethereum/go-ethereum's design, the television, the kitchen lights, the garbage disposal, and the garage door are all controlled by the same switch. If you want to watch TV,
-    you also have to have the kitchen lights on, the garbage disposal running, and the garage door open.
-    
-    For an electrician whose _only concern_ is meeting the arbitrary specifications of an eccentric customer who _demands_ that their
-    house work in this very strange way (forever), hard-installing these devices on the same circuit makes sense. The electrician commits to only
-    serving one customer with this house, and the customer commits to their wiring preference.
-    
-    But, for anyone _else_ looking at this house, the design is absurd. Another home-owner may want to use a TV
-     and a garage door in their own designs, but maybe don't want them to be codependent. Building the feature of a garbage disposal as being inextricable from a TV -- 
-    from the perspective of a technologist (or consumer products designer, or anyone interested in these technologies as generalizeable things, rather than details of an eccentric house) -- 
-    this arbitrary feature-bundling is patently absurd. 
-    
-    This is an Ethereum-as-technology perspective versus an Ethereum-as-network perspective, and reimagining a home where you can have the kitchen lights on
-    without also turning the TV on is one of the things Core-Geth does.  
-
-This same code as above, in Core-Geth, would look as follows:
+Byzantium is a group of EIPs, and the check does not say which of them the code depends on.
+Core-Geth asks about the EIP itself:
 
 ```go
 blockNumber := big.NewInt(0)
 config := params.MainnetChainConfig
-if config.IsEnabled(config.EIP658Transition, blockNumber) {
+if config.IsEnabled(config.GetEIP658Transition, blockNumber) {
 	// do a special thing for post-EIP658 chains
 }
 ```
 
-!!! example "Interface Reference"
-    The complete interface pattern for supported feature methods
-    can be found here: https://github.com/ethereumclassic/core-geth/blob/main/params/types/ctypes/configurator_iface.go
+The `ChainConfigurator` interface in
+[`params/types/ctypes/configurator_iface.go`](https://github.com/ethereumclassic/core-geth/blob/main/params/types/ctypes/configurator_iface.go)
+carries a transition getter and setter for each supported feature, in `ProtocolSpecifier`, and
+`IsEnabled`, in `Forker`.
 
-The implicit feature-group `Byzantium` is deconstructed into its composite features, using EIPs and ECIP specifications as conceptual delineations as well as naming patterns.
+Because each EIP is a setting of its own, a chain can adopt some of an upgrade's EIPs and not others.
+Ethereum Classic runs EIP-658, which embeds a transaction status code in receipts, without EIP-649,
+Byzantium's difficulty bomb delay and block reward reduction. `TestClassicIs649` in
+`params/config_test.go` asserts that `ClassicChainConfig` has no EIP-649 transition.
 
-This makes the implementation of Improvement Proposal specifications referencable and readily testable. You can look up the implementation of EIP658 and see directly how it modifies transaction encoding, without having to disambiguate its implementation from state trie cleaning, gas repricing, opcode additions, block reward changes, or difficulty adjustments.
-  You can test block reward modifications without _also_ having to test difficulty adjustments (... and state root differences, and ...).
-
-!!! hint "Configuration Data Types"
-    Not only does Core-Geth's interface pattern provide descriptive, articulate code; it also
-    allows for the support of _arbitrary configuration data types_; Core-Geth supports configuration via
-    ethereum/go-ethereum's `genesis` data structure (eg. `geth dumpgenesis genesis.json`) as well as OpenEthereum's JSON configuration schema.
-    Extending support for any other configuration schema is likewise possible.
-
-As should be obvious by now, this also allows selective feature adoption for configurations that don't want to bundle changes exactly like the Ethereum Foundation has. 
-  For example, without this decomposition, Ethereum Classic would have had to accept and (re)implement the Difficulty Bomb _and_ reduce block rewards in order to adopt a change to the RLP encoding of transaction receipts change :exploding_head:
-
+!!! note "Genesis file formats"
+    `geth init` reads a genesis file in Core-Geth's format, as
+    [Adding a network](../developers/add-network.md) shows, or in go-ethereum's. An OpenEthereum
+    chain specification is rejected with `invalid configurator schema`.
 
 ## Limitations
 
-Things ethereum/go-ethereum can or will do that Core-Geth won't, or doesn't by default.
-
-- A huge and diverse number of default pipeline-delivered build targets.
-  This is a defaults and configuration sanity challenge for Core-Geth. We're vastly outnumbered by ethereum/go-ethereum maintainers
-  and contributors, and ensuring proper delivery of a whole bunch of diverse artifacts is beyond our capacity.
-  With that said, just because Core-Geth doesn't provide artifacts for a given architecture or OS doesn't mean it can't. 
-  If ethereum/go-ethereum can build and package for it, then with some elbow grease, Core-Geth can too.
-- The `puppeth` CLI program has been [removed](https://github.com/etclabscore/core-geth/pull/270). This is a "wizard"-style interactive program that helps beginners
-  configure chain and network settings.
-- Trim absolute file paths during build. `go build` provides a `-trimpath` flag
-  which reduces the size of the binaries and anonymizes the build environment. This was removed because stripping file paths
-  caused automatic service discovery features to break (they depend, in part, on source file path availability for build-time AST and runtime reflection). 
+- **Release builds keep source file paths.** go-ethereum builds with `-trimpath`; Core-Geth's
+  `build/ci.go` does not, and its comment gives the reason: the OpenRPC discovery document relies on
+  reflection and source parsing that break when paths are trimmed. A `geth` binary therefore contains
+  the source paths of the machine that built it.
+- **Some go-ethereum features are absent**, among them the `--vmtrace` flag, which records internal
+  VM operations with a named tracer, and the `blsync` beacon light syncer.
+- **Ethereum's networks are not supported.** See
+  [Networks this client does not support](../index.md#networks-this-client-does-not-support).
+- **`geth version-check` checks go-ethereum's vulnerability feed, not this client's.** See
+  [`SECURITY.md`](https://github.com/ethereumclassic/core-geth/blob/main/SECURITY.md).

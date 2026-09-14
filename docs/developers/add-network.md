@@ -1,205 +1,429 @@
-# Adding a Network to Core-Geth
+# Adding a network to Core-Geth
 
-Core-Geth currently supports a handful of networks out of the box, 
-and can readily be configured to support others.
+A network is its chain configuration and its genesis block. This page defines an example network,
+AlphaBeta Coin (ABC), and starts a node on it:
 
-This guide will show you how to add a network to Core-Geth.
+- **ABC is proof of work**, with Ethash.
+- **Its genesis block allocates 42 wei to one address.**
+- **Every EIP that `ClassicChainConfig` in `params/config_classic.go` sets is active from block 0.**
+  Ethereum Classic's own choices are left out: Etchash, the ECIP-1017 monetary policy and MESS stay
+  off, and the difficulty bomb is disposed of at block 0.
 
-For the context of this tutorial, I'm going to use __AlphaBeta Coin__:registered:
-as the name of my new network. 
- - AlphaBeta Coin (ABC) will use Proof-of-Work for block issuance, 
-   namely ETHash. (Just like Ethereum.)
- - AlphaBeta Coin will have some arbitrary pre-mine funds allocated to a single address.
- - AlphaBeta Coin will have the "Istanbul" (aka "ETC's Phoenix") protocol upgrades and
-   EVM features activated from genesis (the very first block (number `0`)).
+Core-Geth reads a network definition in two forms:
 
-## Define the configuration.
+1. **Go values in `params/`**, beside the Ethereum Classic and Mordor presets. A network flag, such as
+   `--mordor`, selects a preset. The references to `MordorFlag` in `cmd/utils/flags.go` and
+   `cmd/geth/main.go` show where a network flag is wired; adding one is outside this page.
+2. **A JSON genesis file**, which `geth init` writes into a new database. A node runs a network from
+   this file alone, with no change to the code.
 
-A branch [`docs/_tutorial-add-network`](https://github.com/ethereumclassic/core-geth/tree/docs/_tutorial-add-network) 
-is provided to illustrate the code necessary to define implement basic 
-core-geth support for a new network.
+## Define the network in `params/`
 
-A full diff comparing this branch against its base `v1.11.22` can
-be seen on the Github web UI [here](https://github.com/ethereumclassic/core-geth/compare/v1.11.22...docs/_tutorial-add-network?expand=1).
+The files follow the Mordor preset, `config_mordor.go`, `genesis_mordor.go` and
+`bootnodes_mordor.go`, and the MintMe preset's genesis hash test, `config_mintme_test.go`.
 
-Overall, the files touched include:
+### Chain configuration
+
+`params/config_abc.go`:
+
+```go
+package params
+
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params/types/coregeth"
+	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/params/vars"
+)
+
+var (
+	// ABCChainConfig is the chain parameters to run a node on the AlphaBeta Coin network (PoW).
+	ABCChainConfig = &coregeth.CoreGethChainConfig{
+		NetworkID:                 4269,
+		ChainID:                   big.NewInt(4269),
+		SupportedProtocolVersions: vars.DefaultProtocolVersions,
+		Ethash:                    new(ctypes.EthashConfig),
+
+		EIP2FBlock: big.NewInt(0),
+		EIP7FBlock: big.NewInt(0),
+
+		EIP150Block: big.NewInt(0),
+
+		EIP155Block: big.NewInt(0),
+
+		// EIP158 eq
+		EIP160FBlock: big.NewInt(0),
+		EIP161FBlock: big.NewInt(0),
+		EIP170FBlock: big.NewInt(0),
+
+		// Byzantium eq
+		EIP100FBlock: big.NewInt(0),
+		EIP140FBlock: big.NewInt(0),
+		EIP198FBlock: big.NewInt(0),
+		EIP211FBlock: big.NewInt(0),
+		EIP212FBlock: big.NewInt(0),
+		EIP213FBlock: big.NewInt(0),
+		EIP214FBlock: big.NewInt(0),
+		EIP658FBlock: big.NewInt(0),
+
+		// Constantinople eq, aka Agharta
+		EIP145FBlock:  big.NewInt(0),
+		EIP1014FBlock: big.NewInt(0),
+		EIP1052FBlock: big.NewInt(0),
+
+		// Istanbul eq, aka Phoenix
+		// ECIP-1088
+		EIP152FBlock:  big.NewInt(0),
+		EIP1108FBlock: big.NewInt(0),
+		EIP1344FBlock: big.NewInt(0),
+		EIP1884FBlock: big.NewInt(0),
+		EIP2028FBlock: big.NewInt(0),
+		EIP2200FBlock: big.NewInt(0), // RePetersburg (== re-1283)
+
+		// Berlin eq, aka Magneto
+		EIP2565FBlock: big.NewInt(0),
+		EIP2718FBlock: big.NewInt(0),
+		EIP2929FBlock: big.NewInt(0),
+		EIP2930FBlock: big.NewInt(0),
+
+		// London (partially), aka Mystique
+		EIP3529FBlock: big.NewInt(0),
+		EIP3541FBlock: big.NewInt(0),
+
+		// Spiral, aka Shanghai (partially)
+		EIP3651FBlock: big.NewInt(0), // Warm COINBASE (gas reprice)
+		EIP3855FBlock: big.NewInt(0), // PUSH0 instruction
+		EIP3860FBlock: big.NewInt(0), // Limit and meter initcode
+		EIP6049FBlock: big.NewInt(0), // Deprecate SELFDESTRUCT (noop)
+
+		ECIP1099FBlock: nil, // Etchash
+
+		DisposalBlock:      big.NewInt(0), // Dispose difficulty bomb
+		ECIP1017FBlock:     nil,           // Ethereum Classic's disinflationary monetary policy
+		ECIP1017EraRounds:  nil,
+		ECIP1010PauseBlock: nil, // No need to delay difficulty bomb, is defused by default
+		ECIP1010Length:     nil,
+		ECBP1100FBlock:     nil, // ECBP1100 (MESS artificial finality)
+		RequireBlockHashes: map[uint64]common.Hash{},
+	}
+)
+```
+
+A field left `nil` is never active. `CoreGethChainConfig` in `params/types/coregeth/chain_config.go`
+defines every field and its JSON name.
+
+### Genesis block
+
+`params/genesis_abc.go`:
+
+```go
+package params
+
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params/types/genesisT"
+)
+
+var ABCGenesisHash = common.HexToHash("0x5f32ce1ed875a04d74361164bcfcc24af721df8e616642486338300a691fe582")
+
+func DefaultABCGenesisBlock() *genesisT.Genesis {
+	return &genesisT.Genesis{
+		Config:     ABCChainConfig,
+		Nonce:      hexutil.MustDecodeUint64("0x0"),
+		ExtraData:  hexutil.MustDecode("0x42"),
+		GasLimit:   hexutil.MustDecodeUint64("0x2fefd8"),
+		Difficulty: hexutil.MustDecodeBig("0x20000"),
+		Timestamp:  hexutil.MustDecodeUint64("0x6048d57c"),
+		Alloc: genesisT.GenesisAlloc{
+			common.HexToAddress("366ae7da62294427c764870bd2a460d7ded29d30"): genesisT.GenesisAccount{
+				Balance: big.NewInt(42),
+			},
+		},
+	}
+}
+```
+
+### Bootnodes
+
+`params/bootnodes_abc.go`:
+
+```go
+package params
+
+// ABCBootnodes are the enode URLs of the P2P bootstrap nodes running on
+// the AlphaBeta Coin network.
+var ABCBootnodes = []string{
+	"enode://82ce42238ce90803f2506ae98c433ddb1fa6d35c48786e0f830ce331b170624e2d130fac0dffab6af25e4a6940cbf689766cd0e09e83d295f27c2404f8ec7ac9@203.0.113.10:30303",
+}
+```
+
+`203.0.113.10` is an address reserved for documentation; a real network lists the enode URLs of its
+own bootnodes. `ABCBootnodes` is read only once a network flag selects it, in `setBootstrapNodes`
+(`cmd/utils/flags.go`). A node started from the JSON genesis takes its bootnodes from `--bootnodes`,
+and without that flag uses Ethereum Classic's, as [Establish a network](#establish-a-network) shows.
+
+### Tests
+
+`params/config_abc_test.go` checks the genesis hash, with the `genesisToBlock` helper in
+`params/config_test.go`, and checks that every bootnode entry parses:
+
+```go
+package params
+
+import (
+	"testing"
+
+	"github.com/ethereum/go-ethereum/p2p/enode"
+)
+
+// TestGenesisHashABC tests that ABCGenesisHash is the correct value for the genesis configuration.
+func TestGenesisHashABC(t *testing.T) {
+	genesis := DefaultABCGenesisBlock()
+	block := genesisToBlock(genesis, nil)
+	if block.Hash() != ABCGenesisHash {
+		t.Errorf("want: %s, got: %s", ABCGenesisHash.Hex(), block.Hash().Hex())
+	}
+}
+
+// TestABCBootnodes tests that every ABCBootnodes entry parses as an enode URL.
+func TestABCBootnodes(t *testing.T) {
+	for _, url := range ABCBootnodes {
+		if _, err := enode.Parse(enode.ValidSchemes, url); err != nil {
+			t.Errorf("%s: %v", url, err)
+		}
+	}
+}
+```
+
+`params/example_abc_test.go` checks that `DefaultABCGenesisBlock()` encodes to exactly the JSON in
+the next section. `go test` vets example names, so the example is named for the function it
+documents: an example whose name matches no identifier fails the build.
+
+```go
+package params
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+)
+
+func ExampleDefaultABCGenesisBlock() {
+	genesis := DefaultABCGenesisBlock()
+	jsonBytes, err := json.MarshalIndent(genesis, "", "  ")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println(string(jsonBytes))
+	// Output:
+	// {
+	//   "config": {
+	//     "networkId": 4269,
+	//     "chainId": 4269,
+	//     "supportedProtocolVersions": [
+	//       68
+	//     ],
+	//     "eip2FBlock": 0,
+	//     "eip7FBlock": 0,
+	//     "eip150Block": 0,
+	//     "eip155Block": 0,
+	//     "eip160Block": 0,
+	//     "eip161FBlock": 0,
+	//     "eip170FBlock": 0,
+	//     "eip100FBlock": 0,
+	//     "eip140FBlock": 0,
+	//     "eip198FBlock": 0,
+	//     "eip211FBlock": 0,
+	//     "eip212FBlock": 0,
+	//     "eip213FBlock": 0,
+	//     "eip214FBlock": 0,
+	//     "eip658FBlock": 0,
+	//     "eip145FBlock": 0,
+	//     "eip1014FBlock": 0,
+	//     "eip1052FBlock": 0,
+	//     "eip152FBlock": 0,
+	//     "eip1108FBlock": 0,
+	//     "eip1344FBlock": 0,
+	//     "eip1884FBlock": 0,
+	//     "eip2028FBlock": 0,
+	//     "eip2200FBlock": 0,
+	//     "eip2565FBlock": 0,
+	//     "eip2718FBlock": 0,
+	//     "eip2929FBlock": 0,
+	//     "eip2930FBlock": 0,
+	//     "eip3541FBlock": 0,
+	//     "eip3529FBlock": 0,
+	//     "eip3651FBlock": 0,
+	//     "eip3855FBlock": 0,
+	//     "eip3860FBlock": 0,
+	//     "eip6049FBlock": 0,
+	//     "disposalBlock": 0,
+	//     "ethash": {},
+	//     "requireBlockHashes": {}
+	//   },
+	//   "nonce": "0x0",
+	//   "timestamp": "0x6048d57c",
+	//   "extraData": "0x42",
+	//   "gasLimit": "0x2fefd8",
+	//   "difficulty": "0x20000",
+	//   "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+	//   "coinbase": "0x0000000000000000000000000000000000000000",
+	//   "alloc": {
+	//     "366ae7da62294427c764870bd2a460d7ded29d30": {
+	//       "balance": "0x2a"
+	//     }
+	//   },
+	//   "number": "0x0",
+	//   "gasUsed": "0x0",
+	//   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
+	// }
+}
+```
+
+From the repository root:
+
+```sh
+go test ./params/ -run 'TestGenesisHashABC|TestABCBootnodes|ExampleDefaultABCGenesisBlock' -count=1 -v
+```
 
 ```
-> git --no-pager diff --name-only v1.11.22
-params/bootnodes_abc.go
-params/config_abc.go
-params/config_abc_test.go
-params/example_abc_test.go
-params/genesis_abc.go
+=== RUN   TestGenesisHashABC
+--- PASS: TestGenesisHashABC (0.00s)
+=== RUN   TestABCBootnodes
+--- PASS: TestABCBootnodes (0.00s)
+=== RUN   ExampleDefaultABCGenesisBlock
+--- PASS: ExampleDefaultABCGenesisBlock (0.00s)
+PASS
+ok  	github.com/ethereum/go-ethereum/params	0.029s
 ```
 
----
+## Write the genesis as JSON
 
-Once the skeleton provided by `docs/_tutorial-add-network` is done 
-it's time to put the configuration into action.
+Save the example test's output as `abc_genesis.json`:
 
-We can now pursue two paths:
-
-1. Use the JSON configuration to initialize a chaindata database and start our node(s), and/or
-2. Expose the configuration as a core-geth default through `geth`'s CLI flags via `--abc`.
-
-This tutorial won't cover (2) (yet). 
-
-### Initialize core-geth's database from the JSON configuration.
-
-Build `geth`.
-```
-> make geth
-```
-
-Create a file containing the JSON encoding of ABC network's configuration (JSON data taken from the example test above).
-```
-> cat <<EOF > abc_genesis.json
+```json
 {
   "config": {
-    "networkId": 4269, 
-    "chainId": 4269, 
-    "eip2FBlock": 0, 
-    "eip7FBlock": 0, 
-    "eip150Block": 0, 
-    "eip155Block": 0, 
-    "eip160Block": 0, 
-    "eip161FBlock": 0, 
-    "eip170FBlock": 0, 
-    "eip100FBlock": 0, 
-    "eip140FBlock": 0, 
-    "eip198FBlock": 0, 
-    "eip211FBlock": 0, 
-    "eip212FBlock": 0, 
-    "eip213FBlock": 0, 
-    "eip214FBlock": 0, 
-    "eip658FBlock": 0, 
-    "eip145FBlock": 0, 
-    "eip1014FBlock": 0, 
-    "eip1052FBlock": 0, 
-    "eip152FBlock": 0, 
-    "eip1108FBlock": 0, 
-    "eip1344FBlock": 0, 
-    "eip1884FBlock": 0, 
-    "eip2028FBlock": 0, 
-    "eip2200FBlock": 0, 
-    "disposalBlock": 0, 
-    "ethash": {}, 
+    "networkId": 4269,
+    "chainId": 4269,
+    "supportedProtocolVersions": [
+      68
+    ],
+    "eip2FBlock": 0,
+    "eip7FBlock": 0,
+    "eip150Block": 0,
+    "eip155Block": 0,
+    "eip160Block": 0,
+    "eip161FBlock": 0,
+    "eip170FBlock": 0,
+    "eip100FBlock": 0,
+    "eip140FBlock": 0,
+    "eip198FBlock": 0,
+    "eip211FBlock": 0,
+    "eip212FBlock": 0,
+    "eip213FBlock": 0,
+    "eip214FBlock": 0,
+    "eip658FBlock": 0,
+    "eip145FBlock": 0,
+    "eip1014FBlock": 0,
+    "eip1052FBlock": 0,
+    "eip152FBlock": 0,
+    "eip1108FBlock": 0,
+    "eip1344FBlock": 0,
+    "eip1884FBlock": 0,
+    "eip2028FBlock": 0,
+    "eip2200FBlock": 0,
+    "eip2565FBlock": 0,
+    "eip2718FBlock": 0,
+    "eip2929FBlock": 0,
+    "eip2930FBlock": 0,
+    "eip3541FBlock": 0,
+    "eip3529FBlock": 0,
+    "eip3651FBlock": 0,
+    "eip3855FBlock": 0,
+    "eip3860FBlock": 0,
+    "eip6049FBlock": 0,
+    "disposalBlock": 0,
+    "ethash": {},
     "requireBlockHashes": {}
-  }, 
-  "nonce": "0x0", 
-  "timestamp": "0x6048d57c", 
-  "extraData": "0x42", 
-  "gasLimit": "0x2fefd8", 
-  "difficulty": "0x20000", 
-  "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000", 
-  "coinbase": "0x0000000000000000000000000000000000000000", 
+  },
+  "nonce": "0x0",
+  "timestamp": "0x6048d57c",
+  "extraData": "0x42",
+  "gasLimit": "0x2fefd8",
+  "difficulty": "0x20000",
+  "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "coinbase": "0x0000000000000000000000000000000000000000",
   "alloc": {
     "366ae7da62294427c764870bd2a460d7ded29d30": {
       "balance": "0x2a"
     }
-  }, 
-  "number": "0x0", 
-  "gasUsed": "0x0", 
+  },
+  "number": "0x0",
+  "gasUsed": "0x0",
   "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
 }
-EOF
-
 ```
 
-Initialize core-geth with this configuration (using a custom data directory).
-```
-./build/bin/geth --datadir=./abc-datadir init abc_genesis.json 
-INFO [03-10|09:00:25.710] Maximum peer count                       ETH=50 LES=0 total=50
-INFO [03-10|09:00:25.710] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
-INFO [03-10|09:00:25.711] Set global gas cap                       cap=25000000
-INFO [03-10|09:00:25.711] Allocated cache and file handles         database=/home/ia/go/src/github.com/ethereum/go-ethereum/abc-datadir/geth/chaindata cache=16.00MiB handles=16
-INFO [03-10|09:00:25.728] Writing custom genesis block 
-INFO [03-10|09:00:25.729] Persisted trie from memory database      nodes=1 size=139.00B time="178.942µs" gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=0.00B
-INFO [03-10|09:00:25.729] Wrote custom genesis block OK            config="NetworkID: 4269, ChainID: 4269 Engine: ethash EIP1014: 0 EIP1052: 0 EIP1108: 0 EIP1344: 0 EIP140: 0 EIP145: 0 EIP150: 0 EIP152: 0 EIP155: 0 EIP160: 0 EIP161abc: 0 EIP161d: 0 EIP170: 0 EIP1884: 0 EIP198: 0 EIP2028: 0 EIP211: 0 EIP212: 0 EIP213: 0 EIP214: 0 EIP2200: 0 EIP2: 0 EIP658: 0 EIP7: 0 EthashECIP1041: 0 EthashEIP100B: 0 EthashHomestead: 0 "
-INFO [03-10|09:00:25.730] Successfully wrote genesis state         database=chaindata hash="5f32ce…1fe582"
-INFO [03-10|09:00:25.730] Allocated cache and file handles         database=/home/ia/go/src/github.com/ethereum/go-ethereum/abc-datadir/geth/lightchaindata cache=16.00MiB handles=16
-INFO [03-10|09:00:25.746] Writing custom genesis block 
-INFO [03-10|09:00:25.747] Persisted trie from memory database      nodes=1 size=139.00B time="91.084µs"  gcnodes=0 gcsize=0.00B gctime=0s livenodes=1 livesize=0.00B
-INFO [03-10|09:00:25.748] Wrote custom genesis block OK            config="NetworkID: 4269, ChainID: 4269 Engine: ethash EIP1014: 0 EIP1052: 0 EIP1108: 0 EIP1344: 0 EIP140: 0 EIP145: 0 EIP150: 0 EIP152: 0 EIP155: 0 EIP160: 0 EIP161abc: 0 EIP161d: 0 EIP170: 0 EIP1884: 0 EIP198: 0 EIP2028: 0 EIP211: 0 EIP212: 0 EIP213: 0 EIP214: 0 EIP2200: 0 EIP2: 0 EIP658: 0 EIP7: 0 EthashECIP1041: 0 EthashEIP100B: 0 EthashHomestead: 0 "
-INFO [03-10|09:00:25.749] Successfully wrote genesis state         database=lightchaindata hash="5f32ce…1fe582"
+## Initialize a database
+
+Build `geth` as [Build from source](build-from-source.md) describes. Then, from the repository root:
+
+```sh
+./build/bin/geth --datadir ./abc-datadir init abc_genesis.json
 ```
 
-Start core-geth, reusing our initialized database.
-Since core-geth won't have default bootnodes for this configuration (only available when using CLI flags), we'll need to
-use core-geth's `--bootnodes` flag.
-```
-./build/bin/geth --datadir=./abc-datadir --bootnodes=enode://3e12c4c633157ae52e7e05c168f4b1aa91685a36ba33a0901aa8a83cfeb84c3633226e3dd2eaf59bfc83492139e1d68918bf5b60ba93e2deaedb4e6a2ded5d32@42.152.120.98:30303
-INFO [03-10|09:07:52.762] Starting Geth on Ethereum mainnet... 
-INFO [03-10|09:07:52.762] Bumping default cache on mainnet         provided=1024 updated=4096
-INFO [03-10|09:07:52.763] Maximum peer count                       ETH=50 LES=0 total=50
-INFO [03-10|09:07:52.763] Smartcard socket not found, disabling    err="stat /run/pcscd/pcscd.comm: no such file or directory"
-INFO [03-10|09:07:52.764] Set global gas cap                       cap=25000000
-INFO [03-10|09:07:52.764] Allocated trie memory caches             clean=1023.00MiB dirty=1024.00MiB
-INFO [03-10|09:07:52.765] Allocated cache and file handles         database=/home/ia/go/src/github.com/ethereum/go-ethereum/abc-datadir/geth/chaindata cache=2.00GiB handles=524288
-INFO [03-10|09:07:52.853] Opened ancient database                  database=/home/ia/go/src/github.com/ethereum/go-ethereum/abc-datadir/geth/chaindata/ancient
-INFO [03-10|09:07:52.854] Found stored genesis block               config="NetworkID: 4269, ChainID: 4269 Engine: ethash EIP1014: 0 EIP1052: 0 EIP1108: 0 EIP1344: 0 EIP140: 0 EIP145: 0 EIP150: 0 EIP152: 0 EIP155: 0 EIP160: 0 EIP161abc: 0 EIP161d: 0 EIP170: 0 EIP1884: 0 EIP198: 0 EIP2028: 0 EIP211: 0 EIP212: 0 EIP213: 0 EIP214: 0 EIP2200: 0 EIP2: 0 EIP658: 0 EIP7: 0 EthashECIP1041: 0 EthashEIP100B: 0 EthashHomestead: 0 "
-INFO [03-10|09:07:52.854] Found non-defaulty stored config, using it. 
-INFO [03-10|09:07:52.854] Initialised chain configuration          config="NetworkID: 4269, ChainID: 4269 Engine: ethash EIP1014: 0 EIP1052: 0 EIP1108: 0 EIP1344: 0 EIP140: 0 EIP145: 0 EIP150: 0 EIP152: 0 EIP155: 0 EIP160: 0 EIP161abc: 0 EIP161d: 0 EIP170: 0 EIP1884: 0 EIP198: 0 EIP2028: 0 EIP211: 0 EIP212: 0 EIP213: 0 EIP214: 0 EIP2200: 0 EIP2: 0 EIP658: 0 EIP7: 0 EthashECIP1041: 0 EthashEIP100B: 0 EthashHomestead: 0 "
-INFO [03-10|09:07:52.854] Disk storage enabled for ethash caches   dir=/home/ia/go/src/github.com/ethereum/go-ethereum/abc-datadir/geth/ethash count=3
-INFO [03-10|09:07:52.854] Disk storage enabled for ethash DAGs     dir=/home/ia/.ethash count=2
-INFO [03-10|09:07:52.854] Initialising Ethereum protocol           versions="[65 64 63]" network=1 dbversion=8
-INFO [03-10|09:07:52.855] Loaded most recent local header          number=0 hash="5f32ce…1fe582" td=131072 age=48m12s
-INFO [03-10|09:07:52.855] Loaded most recent local full block      number=0 hash="5f32ce…1fe582" td=131072 age=48m12s
-INFO [03-10|09:07:52.855] Loaded most recent local fast block      number=0 hash="5f32ce…1fe582" td=131072 age=48m12s
-INFO [03-10|09:07:52.855] Loaded local transaction journal         transactions=0 dropped=0
-INFO [03-10|09:07:52.856] Regenerated local transaction journal    transactions=0 accounts=0
-INFO [03-10|09:07:52.877] Allocated fast sync bloom                size=2.00GiB
-INFO [03-10|09:07:52.878] Initialized fast sync bloom              items=1 errorrate=0.000 elapsed="520.228µs"
-INFO [03-10|09:07:52.879] Starting peer-to-peer node               instance=CoreGeth/v1.11.22-stable-72df266d/linux-amd64/go1.16
-INFO [03-10|09:07:52.898] New local node record                    seq=3 id=0a86440c3ab5e22c ip=127.0.0.1 udp=30303 tcp=30303
-INFO [03-10|09:07:52.899] Started P2P networking                   self=enode://5256dcfe7725a98f38cf15b702847fabcaf59bbaa733a6ae5ea68e1089fdd1d274192e17593dc20df00a45ea91372f7c1ca97c8d186fa9e779167240fde15338@127.0.0.1:30303
-INFO [03-10|09:07:52.900] IPC endpoint opened                      url=/home/ia/go/src/github.com/ethereum/go-ethereum/abc-datadir/geth.ipc
-INFO [03-10|09:07:52.905] Mapped network port                      proto=udp extport=30303 intport=30303 interface=NAT-PMP(192.168.86.1)
-INFO [03-10|09:07:52.909] Mapped network port                      proto=tcp extport=30303 intport=30303 interface=NAT-PMP(192.168.86.1)
-INFO [03-10|09:07:54.403] New local node record                    seq=4 id=0a86440c3ab5e22c ip=75.134.144.252 udp=30303 tcp=30303
-INFO [03-10|09:08:06.969] Looking for peers                        peercount=0 tried=5 static=0
-```
-
-### Establish a network.
-
-In order to establish your network, you'll want to make sure you have a bootnode
-available that new nodes coming online can use to query for their peers.
-
-##### Set up a bootnode.
-
-Initialize the bootnode's database and get its self-reported `enode` value. 
-```
-./build/bin/geth --datadir=./abc-datadir init abc_genesis.json
-
-2>/dev/null ./build/bin/geth --datadir=./abc-datadir --exec 'admin.nodeInfo.enode' console
-"enode://5256dcfe7725a98f38cf15b702847fabcaf59bbaa733a6ae5ea68e1089fdd1d274192e17593dc20df00a45ea91372f7c1ca97c8d186fa9e779167240fde15338@75.134.144.252:30303"
-```
-
-This (`enode://5256dcfe7725a98f38cf15b702847fabcaf59bbaa733a6ae5ea68e1089fdd1d274192e17593dc20df00a45ea91372f7c1ca97c8d186fa9e779167240fde15338@75.134.144.252:30303`)
-will be the bootnode `enode` value for the other nodes.
-
-Then turn the bootnode on.
-```
-./build/bin/geth --datadir=./abc-datadir
-```
-
-##### Start up a few nodes.
+Among its output:
 
 ```
-./build/bin/geth --datadir=./abc-datadir-1 init abc_genesis.json
-./build/bin/geth --datadir=./abc-datadir-2 init abc_genesis.json
-./build/bin/geth --datadir=./abc-datadir-3 init abc_genesis.json
+INFO [09-13|02:11:42.995] Writing custom genesis block
+INFO [09-13|02:11:43.086] Wrote genesis block OK                   config="NetworkID: 4269, ChainID: 4269 Engine: ethash EIP1014: 0 EIP1052: 0 EIP1108: 0 EIP1344: 0 EIP140: 0 EIP145: 0 EIP150: 0 EIP152: 0 EIP155: 0 EIP160: 0 EIP161abc: 0 EIP161d: 0 EIP170: 0 EIP1884: 0 EIP198: 0 EIP2028: 0 EIP211: 0 EIP212: 0 EIP213: 0 EIP214: 0 EIP2200: 0 EIP2565: 0 EIP2718: 0 EIP2929: 0 EIP2930: 0 EIP2: 0 EIP3529: 0 EIP3541: 0 EIP3651: 0 EIP3855: 0 EIP3860: 0 EIP6049: 0 EIP658: 0 EIP7: 0 EthashECIP1041: 0 EthashEIP100B: 0 EthashHomestead: 0 "
+INFO [09-13|02:11:43.087] Successfully wrote genesis state         database=chaindata hash=5f32ce..1fe582
 ```
 
-```
-./build/bin/geth --datadir=./abc-datadir-1 --bootnodes=enode://5256dcfe7725a98f38cf15b702847fabcaf59bbaa733a6ae5ea68e1089fdd1d274192e17593dc20df00a45ea91372f7c1ca97c8d186fa9e779167240fde15338@75.134.144.252:30303
+The hash is `ABCGenesisHash`, shortened. To read back what was stored, without starting a node:
+
+```sh
+./build/bin/geth --datadir ./abc-datadir dumpgenesis
 ```
 
-```
-./build/bin/geth --datadir=./abc-datadir-2 --bootnodes=enode://5256dcfe7725a98f38cf15b702847fabcaf59bbaa733a6ae5ea68e1089fdd1d274192e17593dc20df00a45ea91372f7c1ca97c8d186fa9e779167240fde15338@75.134.144.252:30303
+It prints the stored genesis, with the same values as `abc_genesis.json`.
+
+## Start a node
+
+```sh
+./build/bin/geth --datadir ./abc-datadir --networkid 4269 --nodiscover --port 30471 --authrpc.port 18571
 ```
 
+- **`--networkid 4269`** sets the network ID. Without it, and with no network flag, the node takes its
+  network ID from the genesis `chainId` rather than its `networkId`, and its first log line reads
+  `Starting Core-Geth on Ethereum Classic...`.
+- **`--nodiscover`** keeps this node from looking for peers.
+- **`--port` and `--authrpc.port`** move the peer-to-peer and authenticated RPC listeners off their
+  [defaults](../operate/security.md#ports-and-listeners), so the node can run beside another node
+  on the same host.
+
+Among its output:
+
 ```
-./build/bin/geth --datadir=./abc-datadir-3 --bootnodes=enode://5256dcfe7725a98f38cf15b702847fabcaf59bbaa733a6ae5ea68e1089fdd1d274192e17593dc20df00a45ea91372f7c1ca97c8d186fa9e779167240fde15338@75.134.144.252:30303
+INFO [09-13|02:11:43.587] Initialising Ethereum protocol           network=4269 dbversion=<nil>
+INFO [09-13|02:11:43.592] Found stored genesis block               config="NetworkID: 4269, ChainID: 4269 Engine: ethash EIP1014: 0 EIP1052: 0 EIP1108: 0 EIP1344: 0 EIP140: 0 EIP145: 0 EIP150: 0 EIP152: 0 EIP155: 0 EIP160: 0 EIP161abc: 0 EIP161d: 0 EIP170: 0 EIP1884: 0 EIP198: 0 EIP2028: 0 EIP211: 0 EIP212: 0 EIP213: 0 EIP214: 0 EIP2200: 0 EIP2565: 0 EIP2718: 0 EIP2929: 0 EIP2930: 0 EIP2: 0 EIP3529: 0 EIP3541: 0 EIP3651: 0 EIP3855: 0 EIP3860: 0 EIP6049: 0 EIP658: 0 EIP7: 0 EthashECIP1041: 0 EthashEIP100B: 0 EthashHomestead: 0 "
+INFO [09-13|02:11:43.593] Loaded most recent local block           number=0 hash=5f32ce..1fe582 td=131,072 age=5y7mo2d
 ```
+
+Stop the node with Ctrl-C.
+
+## Establish a network
+
+With no network flag, a node applies Ethereum Classic's peer discovery defaults.
+[Private network](../tutorials/private-network.md#before-you-start) gives the flags that override
+them; on this network every node also takes `--networkid 4269`.
+
+`geth dumpconfig` with those flags shows the peer settings a node will use, under
+`BootstrapNodes` and `EthDiscoveryURLs`. [Private network](../tutorials/private-network.md) walks
+through running a bootnode and member nodes.

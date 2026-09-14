@@ -4,23 +4,12 @@ title: Build from Source
 
 ## Hardware Requirements
 
-Minimum:
-
-* CPU with 2+ cores
-* 4GB RAM
-* 500GB free storage space to sync the Mainnet
-* 8 MBit/sec download Internet service
-
-Recommended:
-
-* Fast CPU with 4+ cores
-* 16GB+ RAM
-* High Performance SSD with at least 500GB free space
-* 25+ MBit/sec download Internet service
+The disk, memory and time a node needs are measured on
+[Hardware requirements](../getting-started/hardware-requirements.md).
 
 ## Dependencies
 
-- **Go 1.26 or later.** <https://go.dev/doc/install> — the module declares
+- **Go 1.26 or later.** <https://go.dev/doc/install>. The module declares
   `go 1.26`, so an older toolchain refuses to build it rather than producing a
   broken binary.
 - **A C compiler.** Parts of the client are cgo, so a working toolchain is
@@ -79,5 +68,5 @@ $ docker build -t core-geth-alltools:local -f Dockerfile.alltools .
 
 `core-geth:local` is just the tag you are giving the image; name it whatever you
 like. The image's entry point is the `geth` binary, so flags go straight to the
-node — `docker run core-geth:local --classic`. Running a published image instead
+node: `docker run core-geth:local --classic`. Running a published image instead
 is covered under [Installation](../getting-started/installation.md#docker).

@@ -19,7 +19,7 @@ to publish to.
       The release artifacts are produced by CI, so a red pipeline means no artifacts
       rather than a bad release.
 - [ ] **Set the release stage.** Edit `params/version.go` so `VersionMeta` names the
-      stage being cut — `unstable` → `RC1`, `RC2`, … → `stable`. It must never be
+      stage being cut: `unstable` → `RC1`, `RC2`, … → `stable`. It must never be
       empty: the archive and version helpers branch on `!= "stable"`, so an empty
       value produces a malformed `1.13.0--<commit>` name rather than a clean one.
       Check `gofmt` after editing; the constant block realigns.
@@ -34,7 +34,7 @@ $ git push origin v1.13.0-rc1
 ```
 
 Creating a `v*` tag is restricted to repository admins by a ruleset, so this push
-reports a bypass. That restriction is what the build attestation rests on — an
+reports a bypass. That restriction is what the build attestation rests on. An
 attestation binds an archive to the run that produced it, but only the tag rule
 decides who may start such a run.
 
@@ -47,7 +47,7 @@ wrong, cut the next one.
 
 | Workflow | Produces |
 | --- | --- |
-| `release-packages.yml` | 18 archives — 9 platforms × (`geth`, `alltools`) — each with a `.sha256`, plus a build attestation, uploaded to a **draft** release |
+| `release-packages.yml` | 18 archives: 9 platforms × (`geth`, `alltools`), each with a `.sha256`, plus a build attestation, uploaded to a **draft** release |
 | `docker-publish.yml` | multi-architecture images for `linux/amd64` and `linux/arm64`, pushed to GHCR |
 
 A tag whose name contains a hyphen is treated as a prerelease: the GitHub release is
@@ -74,6 +74,32 @@ release such as `v1.13.0` takes the moving tag.
     $ objdump -T geth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
     ```
 
+- [ ] **Regenerate the `--help` dump.** From a local `make geth` at this tag,
+      replace the dump in
+      [`run-cli.md`](../getting-started/run-cli.md#command-line-options) with
+      this command's output in full, never by hand. `HOME='~'` keeps the
+      builder's real home directory out of the printed defaults:
+
+    ```shell
+    $ HOME='~' build/bin/geth --help
+    ```
+
+- [ ] **Regenerate the JSON-RPC module pages** (`docs/JSON-RPC-API/modules/*.md`),
+      from the same checkout, never by hand:
+
+    ```shell
+    $ make docs-generate
+    ```
+
+- [ ] **Test the example code on [Adding a network](add-network.md).** Its five Go
+      files are not in the repository: add them under `params/` in the same
+      checkout, run the page's test command from the repository root, then remove
+      them:
+
+    ```shell
+    $ go test ./params/ -run 'TestGenesisHashABC|TestABCBootnodes|ExampleDefaultABCGenesisBlock' -count=1 -v
+    ```
+
 - [ ] **A second person has reviewed** the notes, the artifact list and the
       fingerprints.
 - [ ] **For a full release, create the archive branch.** The migration guide tells
@@ -87,5 +113,5 @@ release such as `v1.13.0` takes the moving tag.
 - [ ] Set `VersionMeta` to the next stage and push that commit.
 - [ ] For a first-ever image push, confirm the GHCR package visibility. A registry
       creates new packages private by default, so nothing is pullable until it is
-      made public — and making it public is the moment every tag it carries starts
+      made public, and making it public is the moment every tag it carries starts
       serving real traffic. Check what `:latest` points at before flipping it.

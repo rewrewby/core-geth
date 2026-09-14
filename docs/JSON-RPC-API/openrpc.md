@@ -7,49 +7,40 @@ hide:
 # OpenRPC
 
 !!! tldr "TLDR"
-    The `rpc.discover` method returns an API service description structured per the [OpenRPC specification](https://github.com/open-rpc/spec/blob/master/spec.md). 
+    The `rpc.discover` method returns an API service description structured per the [OpenRPC specification](https://spec.open-rpc.org/).
 
 ## Discovery
 
-Core-Geth supports [OpenRPC's Service Discovery method](https://spec.open-rpc.org/#service-discovery-method), enabling efficient and well-spec'd JSON RPC interfacing and tooling. This method follows the established JSON RPC patterns, and is accessible via HTTP, WebSocket, IPC, and console servers. To use this method:
+Core-Geth supports [OpenRPC's Service Discovery method](https://spec.open-rpc.org/#service-discovery-method), enabling efficient and well-spec'd JSON RPC interfacing and tooling. This method follows the established JSON RPC patterns, and is accessible via HTTP, WebSocket, IPC, and console servers. It answers as `rpc.discover` or `rpc_discover`. To use this method over HTTP, on a node started with `--http`:
 
 !!! Example
 
     ```shell
-    $ curl -X POST -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}'
+    $ curl -X POST -H 'Content-Type: application/json' --data '{"jsonrpc":"2.0","method":"rpc_discover","params":[],"id":1}' http://localhost:8545
+    ```
+
+    An excerpt of the response from a v1.13 node, formatted for reading, with `[...]` marking
+    what is left out:
+
+    ```
     {
       "jsonrpc": "2.0",
       "id": 1,
       "result": {
-        "openrpc": "1.0.10",
+        "openrpc": "1.2.6",
         "info": {
-          "description": "This API lets you interact with an EVM-based client via JSON-RPC",
-          "license": {
-            "name": "Apache 2.0",
-            "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
-          },
-          "title": "Ethereum JSON-RPC",
-          "version": "1.0.0"
-        },
-        "servers": [],
+          "title": "Core-Geth RPC API",
+    [...]
         "methods": [
           {
-            "description": "Returns the version of the current client",
-            "name": "web3_clientVersion",
+            "name": "eth_accounts",
+    [...]
+            "summary": "Accounts returns the collection of accounts this node manages.\n",
+            "paramStructure": "by-position",
             "params": [],
-            "result": {
-              "description": "client version",
-              "name": "clientVersion",
-              "schema": {
-                "type": "string"
-              }
-            },
-            "summary": "current client version"
-          },
-
     [...]
     ```
 
-!!! Tip "Better representation of the discovery result at the OpenRPC playground"
+!!! Tip "The namespace pages in this section"
 
-    You can see an example use case of the discovery service in the respective [OpenRPC Playground](https://playground.open-rpc.org/?schemaUrl=https://gist.githubusercontent.com/ziogaschr/c51916d70ca5304bb3e3abf4dcd518ca/raw/8079eafd8de6436bd3e4ab6c9df0db64c25cd1a6/core-geth_rpc-discovery_1.11.21-unstable.json).
+    The namespace pages in this section are generated from the client's discovery document.

@@ -7,7 +7,7 @@
 
 | Entity | Version |
 | --- | --- |
-| Source | <code>1.13.0-unstable/generated-at:2026-09-02T12:02:52-06:00</code> |
+| Source | <code>1.13.0-RC3/generated-at:2026-09-13T17:19:03-06:00</code> |
 | OpenRPC | <code>1.2.6</code> |
 
 ---
@@ -255,7 +255,8 @@ func (api *adminAPI) Datadir() string {
 ### admin_ecbp1100
 
 Ecbp1100 sets the ECBP-1100 (MESS) activation block and reports whether the
-mechanism is active afterwards.
+mechanism is active afterwards. The block is a height, or "latest" or "pending",
+which both mean the current head; "finalized" and "safe" are refused.
 
 This mutates chain configuration. To read the current state without changing
 it, use Ecbp1100Status.
@@ -373,17 +374,21 @@ blockNr <code>rpc.BlockNumber</code>
 <p>
 ```go
 func (api *AdminAPI) Ecbp1100(blockNr rpc.BlockNumber) (bool, error) {
-	i := uint64(blockNr.Int64())
-	err := api.eth.blockchain.Config().SetECBP1100Transition(&i)
+	i, err := ecbp1100ActivationBlock(blockNr, api.eth.blockchain.CurrentBlock().Number.Uint64())
+	if err != nil {
+		return false, err
+	}
+	err = api.eth.blockchain.Config().SetECBP1100Transition(&i)
 	return api.eth.blockchain.IsArtificialFinalityEnabled() && api.eth.blockchain.Config().IsEnabled(api.eth.blockchain.Config().GetECBP1100Transition, api.eth.blockchain.CurrentBlock().Number), err
 }// Ecbp1100 sets the ECBP-1100 (MESS) activation block and reports whether the
-// mechanism is active afterwards.
+// mechanism is active afterwards. The block is a height, or "latest" or "pending",
+// which both mean the current head; "finalized" and "safe" are refused.
 //
 // This mutates chain configuration. To read the current state without changing
 // it, use Ecbp1100Status.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L151" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L155" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -422,21 +427,21 @@ _None_
 	- additionalProperties: `false`
 	- properties: 
 		- activatedAtBlock: 
-			- pattern: `^0x[a-fA-F0-9]+$`
-			- title: `integer`
+			- pattern: `^0x([a-fA-F\d])+$`
+			- title: `uint64`
 			- type: `string`
 
 		- defaultDisabledAtBlock: 
-			- pattern: `^0x[a-fA-F0-9]+$`
-			- title: `integer`
+			- pattern: `^0x([a-fA-F\d])+$`
+			- title: `uint64`
 			- type: `string`
 
 		- enabled: 
 			- type: `boolean`
 
 		- head: 
-			- pattern: `^0x[a-fA-F0-9]+$`
-			- title: `integer`
+			- pattern: `^0x([a-fA-F\d])+$`
+			- title: `uint64`
 			- type: `string`
 
 		- nodeSwitch: 
@@ -455,21 +460,21 @@ _None_
         "additionalProperties": false,
         "properties": {
             "activatedAtBlock": {
-                "pattern": "^0x[a-fA-F0-9]+$",
-                "title": "integer",
+                "pattern": "^0x([a-fA-F\\d])+$",
+                "title": "uint64",
                 "type": "string"
             },
             "defaultDisabledAtBlock": {
-                "pattern": "^0x[a-fA-F0-9]+$",
-                "title": "integer",
+                "pattern": "^0x([a-fA-F\\d])+$",
+                "title": "uint64",
                 "type": "string"
             },
             "enabled": {
                 "type": "boolean"
             },
             "head": {
-                "pattern": "^0x[a-fA-F0-9]+$",
-                "title": "integer",
+                "pattern": "^0x([a-fA-F\\d])+$",
+                "title": "uint64",
                 "type": "string"
             },
             "nodeSwitch": {
@@ -516,10 +521,7 @@ _None_
 <p>
 ```go
 func (api *AdminAPI) Ecbp1100Status() ECBP1100Status {
-	config := api.eth.blockchain.Config()
-	head := api.eth.blockchain.CurrentBlock().Number
-	nodeSwitch := api.eth.blockchain.IsArtificialFinalityEnabled()
-	return ECBP1100Status{Enabled: nodeSwitch && config.IsEnabled(config.GetECBP1100Transition, head), NodeSwitch: nodeSwitch, ActivatedAtBlock: config.GetECBP1100Transition(), DefaultDisabledAtBlock: config.GetECBP1100DeactivateTransition(), Head: head.Uint64()}
+	return ecbp1100Status(api.eth.blockchain.Config(), api.eth.blockchain.CurrentBlock().Number, api.eth.blockchain.IsArtificialFinalityEnabled())
 }// Ecbp1100Status reports the ECBP-1100 (MESS) state at the current head and
 // changes nothing.
 //
@@ -528,7 +530,7 @@ func (api *AdminAPI) Ecbp1100Status() ECBP1100Status {
 // exists so that state can be read without altering it.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L195" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L222" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -701,7 +703,7 @@ func (api *AdminAPI) ExportChain(file string, first *uint64, last *uint64) (bool
 // or a range of blocks if first and last are non-nil.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L46" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L49" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -816,7 +818,7 @@ func (api *AdminAPI) ImportChain(file string) (bool, error) {
 	return true, nil
 }
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L94" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L97" target="_">View on GitHub →</a>
 </p>
 </details>
 
@@ -926,7 +928,7 @@ func (api *AdminAPI) MaxPeers(n int) (bool, error) {
 }// MaxPeers sets the maximum peer limit for the protocol manager and the p2p server.
 
 ```
-<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L209" target="_">View on GitHub →</a>
+<a href="https://github.com/ethereumclassic/core-geth/blob/main/eth/api_admin.go#L238" target="_">View on GitHub →</a>
 </p>
 </details>
 
