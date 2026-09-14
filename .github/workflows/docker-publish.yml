@@ -63,11 +63,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # The generated description is the repository's About text, which is not a
+      # description of this image, and nothing names the vendor or the docs.
       - name: Derive image metadata
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.description=${{ matrix.variant.prefix == '' && 'Core-Geth: the Ethereum Classic execution client' || 'Core-Geth: the Ethereum Classic execution client, with its developer tools' }}
+            org.opencontainers.image.vendor=Ethereum Classic DAO LLC
+            org.opencontainers.image.documentation=https://docs.coregeth.com
 
       # Pushed by digest only. The tags are applied once, in the merge job, to a
       # manifest list covering every architecture -- tagging here would leave the
@@ -174,10 +180,18 @@ jobs:
             # the same `sha-<commit>` tag and whichever finishes last silently wins.
             type=sha,format=long,prefix=${{ matrix.variant.prefix }}sha-
 
+      # GitHub shows a multi-arch image's description from the index annotations,
+      # not from the per-architecture labels, so the index carries its own.
       - name: Create and push the manifest list
         working-directory: ${{ runner.temp }}/digests
+        env:
+          DESCRIPTION: "${{ matrix.variant.prefix == '' && 'Core-Geth: the Ethereum Classic execution client' || 'Core-Geth: the Ethereum Classic execution client, with its developer tools' }}"
         run: |
           docker buildx imagetools create \
+            --annotation "index:org.opencontainers.image.description=$DESCRIPTION" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "index:org.opencontainers.image.vendor=Ethereum Classic DAO LLC" \
+            --annotation "index:org.opencontainers.image.documentation=https://docs.coregeth.com" \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY }}/${{ github.repository }}@sha256:%s ' *)
         shell: bash
