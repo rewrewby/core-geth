@@ -66,21 +66,44 @@ release such as `v1.13.0` takes the moving tag.
     $ gh attestation verify core-geth-linux-v1.13.0-rc1.zip --repo ethereumclassic/core-geth
     ```
 
-- [ ] **Load an image tarball.** Its attestation verifies, it loads under the published name, and
-      its image ID equals the config digest of that architecture's published image:
+- [ ] **Load an image tarball.** Its attestation verifies, it loads under the published name, and the
+      config digest its `manifest.json` names equals the image ID the release run's save job logged
+      for that architecture. Compare those two, not `docker image inspect`'s ID: a Docker using the
+      containerd image store reports the manifest digest there instead:
 
     ```shell
     $ gh attestation verify core-geth-docker-amd64-<tag>.tar.gz --repo ethereumclassic/core-geth
     $ docker load -i core-geth-docker-amd64-<tag>.tar.gz
     $ docker run --rm ghcr.io/ethereumclassic/core-geth:<tag> version
+    $ tar -xOzf core-geth-docker-amd64-<tag>.tar.gz manifest.json   # "Config": "blobs/sha256/<digest>"
     ```
 
-- [ ] **Spot-check a binary.** It should report the version you set, and its glibc
-      floor should be the one the build targets rather than the runner's:
+- [ ] **Spot-check a binary.** It should report the version you set and a commit
+      date, its glibc floor should be the one the build targets rather than the
+      runner's, and its Go version should be the patch `build/checksums.txt` pins, the
+      same in every archive:
 
     ```shell
     $ ./geth version
     $ objdump -T geth | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1
+    $ go version geth
+    ```
+
+- [ ] **Every archive carries `COPYING`** beside its binaries:
+
+    ```shell
+    $ unzip -l core-geth-linux-<tag>.zip
+    ```
+
+- [ ] **The Windows and macOS metadata checks passed.** The release run's *Verify the
+      Windows version information* and *Verify the macOS minimum version* steps are
+      green. On Windows, the Details tab of `geth.exe`'s Properties shows Core-Geth, the
+      version and Ethereum Classic DAO LLC.
+- [ ] **The published image index carries its annotations**: description, source,
+      vendor and documentation:
+
+    ```shell
+    $ docker buildx imagetools inspect --raw ghcr.io/ethereumclassic/core-geth:<tag>
     ```
 
 - [ ] **Regenerate the `--help` dump.** From a local `make geth` at this tag,
