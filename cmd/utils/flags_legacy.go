@@ -45,6 +45,9 @@ var DeprecatedFlags = []cli.Flag{
 	LightMaxPeersFlag,
 	LightNoPruneFlag,
 	LightNoSyncServeFlag,
+	UltraLightServersFlag,
+	UltraLightFractionFlag,
+	UltraLightOnlyAnnounceFlag,
 	LogBacktraceAtFlag,
 	LogDebugFlag,
 }

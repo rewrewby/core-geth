@@ -338,57 +338,63 @@ var (
 		Value:    ethconfig.Defaults.TransactionHistory,
 		Category: flags.StateCategory,
 	}
-	// Light server and client settings
+	// Light server and client settings.
+	//
+	// The light client (LES) and ultra-light client were removed; les/ and light/
+	// no longer exist in this tree. These flags are still registered so that an
+	// existing command line keeps starting, but they do nothing. They are filed
+	// under DeprecatedCategory rather than a live-looking LIGHT CLIENT section, so
+	// `--help` does not advertise a subsystem that is gone, and setLes warns on use.
 	LightServeFlag = &cli.IntFlag{
 		Name:     "light.serve",
-		Usage:    "Maximum percentage of time allowed for serving LES requests (multi-threaded processing allows values over 100)",
+		Usage:    "Maximum percentage of time allowed for serving LES requests (deprecated, has no effect)",
 		Value:    ethconfig.Defaults.LightServ,
-		Category: flags.LightCategory,
+		Category: flags.DeprecatedCategory,
 	}
 	LightIngressFlag = &cli.IntFlag{
 		Name:     "light.ingress",
-		Usage:    "Incoming bandwidth limit for serving light clients (kilobytes/sec, 0 = unlimited)",
+		Usage:    "Incoming bandwidth limit for serving light clients (deprecated, has no effect)",
 		Value:    ethconfig.Defaults.LightIngress,
-		Category: flags.LightCategory,
+		Category: flags.DeprecatedCategory,
 	}
 	LightEgressFlag = &cli.IntFlag{
 		Name:     "light.egress",
-		Usage:    "Outgoing bandwidth limit for serving light clients (kilobytes/sec, 0 = unlimited)",
+		Usage:    "Outgoing bandwidth limit for serving light clients (deprecated, has no effect)",
 		Value:    ethconfig.Defaults.LightEgress,
-		Category: flags.LightCategory,
+		Category: flags.DeprecatedCategory,
 	}
 	LightMaxPeersFlag = &cli.IntFlag{
 		Name:     "light.maxpeers",
-		Usage:    "Maximum number of light clients to serve, or light servers to attach to",
+		Usage:    "Maximum number of light clients to serve (deprecated, has no effect)",
 		Value:    ethconfig.Defaults.LightPeers,
-		Category: flags.LightCategory,
+		Category: flags.DeprecatedCategory,
 	}
 	UltraLightServersFlag = &cli.StringFlag{
 		Name:     "ulc.servers",
-		Usage:    "List of trusted ultra-light servers",
+		Usage:    "List of trusted ultra-light servers (deprecated, has no effect)",
 		Value:    strings.Join(ethconfig.Defaults.UltraLightServers, ","),
-		Category: flags.LightCategory,
+		Category: flags.DeprecatedCategory,
 	}
 	UltraLightFractionFlag = &cli.IntFlag{
 		Name:     "ulc.fraction",
-		Usage:    "Minimum % of trusted ultra-light servers required to announce a new head",
+		Usage:    "Minimum % of trusted ultra-light servers required to announce a new head (deprecated, has no effect)",
 		Value:    ethconfig.Defaults.UltraLightFraction,
-		Category: flags.LightCategory,
+		Category: flags.DeprecatedCategory,
 	}
 	UltraLightOnlyAnnounceFlag = &cli.BoolFlag{
 		Name:     "ulc.onlyannounce",
-		Usage:    "Ultra light server sends announcements only",
-		Category: flags.LightCategory,
+		Usage:    "Ultra light server sends announcements only (deprecated, has no effect)",
+		Category: flags.DeprecatedCategory,
 	}
 	LightNoPruneFlag = &cli.BoolFlag{
 		Name:     "light.nopruning",
-		Usage:    "Disable ancient light chain data pruning",
-		Category: flags.LightCategory,
+		Usage:    "Disable ancient light chain data pruning (deprecated, has no effect)",
+		Category: flags.DeprecatedCategory,
 	}
 	LightNoSyncServeFlag = &cli.BoolFlag{
 		Name:     "light.nosyncserve",
-		Usage:    "Enables serving light clients before syncing",
-		Category: flags.LightCategory,
+		Usage:    "Enables serving light clients before syncing (deprecated, has no effect)",
+		Category: flags.DeprecatedCategory,
 	}
 
 	// Ethash settings
@@ -611,7 +617,7 @@ var (
 	}
 	MinerGasLimitFlag = &cli.Uint64Flag{
 		Name:     "miner.gaslimit",
-		Usage:    "Target gas ceiling for mined blocks",
+		Usage:    "Target gas ceiling for mined blocks (8000000 on Ethereum Classic and Mordor)",
 		Value:    ethconfig.Defaults.Miner.GasCeil,
 		Category: flags.MinerCategory,
 	}
@@ -1446,18 +1452,18 @@ func setLes(ctx *cli.Context, cfg *ethconfig.Config) {
 	if ctx.IsSet(LightMaxPeersFlag.Name) {
 		log.Warn("The light server has been deprecated, please remove this flag", "flag", LightMaxPeersFlag.Name)
 	}
+	// The ultra-light client went with the light client. These used to write
+	// cfg.UltraLight* fields that nothing reads any more, so a flag was accepted
+	// silently and changed nothing. Warn instead, the same way the light server
+	// flags above do.
 	if ctx.IsSet(UltraLightServersFlag.Name) {
-		cfg.UltraLightServers = strings.Split(ctx.String(UltraLightServersFlag.Name), ",")
+		log.Warn("The ultra-light client has been deprecated, please remove this flag", "flag", UltraLightServersFlag.Name)
 	}
 	if ctx.IsSet(UltraLightFractionFlag.Name) {
-		cfg.UltraLightFraction = ctx.Int(UltraLightFractionFlag.Name)
-	}
-	if cfg.UltraLightFraction <= 0 && cfg.UltraLightFraction > 100 {
-		log.Error("Ultra light fraction is invalid", "had", cfg.UltraLightFraction, "updated", ethconfig.Defaults.UltraLightFraction)
-		cfg.UltraLightFraction = ethconfig.Defaults.UltraLightFraction
+		log.Warn("The ultra-light client has been deprecated, please remove this flag", "flag", UltraLightFractionFlag.Name)
 	}
 	if ctx.IsSet(UltraLightOnlyAnnounceFlag.Name) {
-		cfg.UltraLightOnlyAnnounce = ctx.Bool(UltraLightOnlyAnnounceFlag.Name)
+		log.Warn("The ultra-light client has been deprecated, please remove this flag", "flag", UltraLightOnlyAnnounceFlag.Name)
 	}
 	if ctx.IsSet(LightNoPruneFlag.Name) {
 		log.Warn("The light server has been deprecated, please remove this flag", "flag", LightNoPruneFlag.Name)
