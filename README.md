@@ -25,7 +25,7 @@ mv <datadir>/geth/nodekey <datadir>/geth/nodekey.old-rotated-$(date +%F)
 ```
 
 The client generates a fresh key on the next start. **Your enode ID changes**, so update
-every static-peer, trusted-peer or bootnode list that names this node — on your own
+every static-peer, trusted-peer or bootnode list that names this node, on your own
 machines and with anyone peering with you. Capture the old enode ID before rotating if you
 need it to find those references; it cannot be re-derived afterwards.
 
@@ -42,8 +42,8 @@ before concluding otherwise:
 geth attach --exec 'eth.blockNumber' <datadir>/geth.ipc
 ```
 
-Compare against a block explorer or a second client. Resync only if it diverges — and if it
-does, that is a finding worth reporting.
+Compare against a block explorer or another node you operate. Resync only if it diverges, and
+if it does, that is a finding worth reporting.
 
 **Nothing here requires touching your keystore.** These are network-layer and handshake
 issues; account keys are not implicated by any of them. Rotate account keys only if your
@@ -112,10 +112,19 @@ column is client detail and is not part of that specification.
 
 **MESS** (Modified Exponential Subjective Scoring, ECBP-1100) is a chain-selection
 defense against deep reorganizations. It is a client-side policy rather than a state
-transition, which is why it appears as two rows: the block at which it defaults on, and
-the block at which it defaults off.
+transition, which is why it appears as two rows: the block from which ECBP-1100 turns it
+on by default, and the block from which ECBP-1110 recommends clients ship it off by
+default.
 
-**Through Spiral — the head configuration this client implements — Ethereum Classic has
+**Core-Geth v1.13.x ships MESS on by default, and does not follow the ECBP-1110 row.**
+That is the client maintainers' decision to make: both documents are Best Practices
+rather than consensus rules, so each client chooses its own default. Centralized exchanges
+requested MESS as a tool for periods of network hashrate instability, and shipping it on
+lets the default lean toward security. Operators can always disable it with
+`--mess=false`. The [MESS confirmation calculator](docs/guides/mess-calculator.md) shows how much hashrate a
+reorganization of a given age needs.
+
+**Through Spiral (the head configuration this client implements), Ethereum Classic has
 not adopted EIP-1559**, so transactions are the legacy and EIP-2930 access-list types.
 That is the state of the fork schedule in `params/`, not a permanent property of the
 network: adopting it is a protocol decision for Ethereum Classic to make, and a client
@@ -129,13 +138,12 @@ on a supported toolchain while the client is sunset, so it takes no new protocol
 version.
 
 `eth/69` (EIP-7642) removes Total Difficulty from the handshake, which this client's
-proof-of-work chain selection reads — so adopting it here would mean reworking that path
+proof-of-work chain selection reads, so adopting it here would mean reworking that path
 in a client already scheduled for retirement. **That is a scoping decision about this
-client, not a limitation of Ethereum Classic.** `eth/69` is already implemented for
-Ethereum Classic in [Fukuii](https://fukuii.org), developed at
-[`fukuii-project/fukuii-cli`](https://github.com/fukuii-project/fukuii-cli), and reaches
-the network through it and through the Ethereum Classic extensions maintained against
-mainstream Ethereum clients.
+client, not a limitation of Ethereum Classic.** Later versions are left to the clients that
+succeed it: [Fukuii](https://fukuii.org) is the preferred successor, and the migration guide's
+[Fukuii section](docs/tutorials/v1.13.0-migration.md#migrating-to-fukuii) says when to move to
+it.
 
 ## Build
 
@@ -220,7 +228,15 @@ itself, so a key used by an unpatched node should be treated as exposed. Stop th
 remove `<datadir>/geth/nodekey`, and restart; the client generates a new one. The node's
 enode ID changes, so update any static-peer or trusted-peer list that names it.
 
-`SECURITY.md` carries the disclosure policy and PGP key.
+**Track the [`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth/releases)
+release line.** To subscribe to security updates and releases, or to report a security issue
+privately, use GitHub or email <security@ethereumclassic.com>. [`SECURITY.md`](SECURITY.md) has
+the disclosure policy and the details of each channel.
+
+With the ETC Cooperative's dissolution, Ethereum Classic stakeholders such as mining pools,
+exchanges and service providers should use <security@ethereumclassic.com> as their point of
+contact. A person answers it: one of the core developers who maintain this repository and have
+been with the network since its inception.
 
 ## Contributing
 
@@ -279,17 +295,78 @@ straight line.
 **The code.** go-ethereum began in December 2013.
 [multi-geth](https://github.com/multi-geth/multi-geth) forked it in March 2018 to
 support several networks from a single client, holding chain rules as
-configuration rather than as code branches. multi-geth was renamed Core-Geth in
-February 2020 and kept that model, which is why a further network here is a chain
-configuration rather than a new client.
+configuration rather than as code branches. Core-Geth forked from multi-geth, a
+separate client, in 2020 and kept that model, which is why a further network here is
+a chain configuration rather than a new client.
 
 **The team.** ETC Labs Core formed in December 2018, many of its developers having
-previously been part of ETCDEV, which supported the Classic Geth client. As
+previously been part of [ETCDEV](https://web.archive.org/web/20190330063218/https://www.etcdevteam.com/), which supported the Classic Geth client. As
 Classic Geth was retired the team supported multi-geth, and then Core-Geth from
-2020. From January 2022 the work was funded by the
-[ETC Cooperative](https://etccooperative.org/posts/2021-12-22-coop-now-funding-core-geth).
+2020, publishing as [ETC Labs](https://web.archive.org/web/20200425081322/https://etclabs.org/) and
+[ETC Core](https://web.archive.org/web/20200426174445/https://etccore.io/). ETC Labs left the Ethereum Classic ecosystem
+in 2021, and from January 2022 the work was funded by the
+[ETC Cooperative](https://web.archive.org/web/20250205192722/https://etccooperative.org/), as it
+[announced in December 2021](https://web.archive.org/web/20211222232926/https://etccooperative.org/posts/2021-12-22-coop-now-funding-core-geth).
+The Cooperative entered maintenance mode at the end of 2024, as its
+[2024 retrospective](https://etccooperative.org/etc-cooperative-retrospective-2024.pdf)
+states and its [Q1 2025 report](https://web.archive.org/web/20250811083834/https://etccooperative.org/posts/2025-06-24-q1-report-en)
+confirms: *"we are now in maintenance mode and spending has decreased significantly."*
+It stopped developing Core-Geth in 2025 and wound down its team.
+The [Ethereum Classic DAO](https://ethereumclassicdao.org), a Wyoming DAO LLC launched in May 2025,
+succeeds the ETC Cooperative.
 
-**This repository** was created on 2024-12-21 from the preceding repository at
-commit `7ef3ecd7a` (2024-12-16), and has carried Ethereum Classic's Core-Geth
-since. That commit is preserved on the `archive-etclabscore-2024-12` branch and
-tagged `archive/etclabscore-2024-12`.
+**This repository.** Maintenance moved to
+[`ethereumclassic/core-geth`](https://github.com/ethereumclassic/core-geth), the Ethereum
+Classic community repository, created on 2024-12-21 from the preceding repository at
+commit `7ef3ecd7a` (2024-12-16). That commit is preserved on the
+`archive-etclabscore-2024-12` branch and tagged
+[`archive/etclabscore-2024-12`](https://github.com/ethereumclassic/core-geth/releases/tag/archive%2Fetclabscore-2024-12).
+It is maintained by long-time Ethereum Classic core developers, with the network
+since its inception, as a public good for the network.
+
+**The dormancy.** After maintenance moved to the community repository, the client went
+unfunded and unmaintained until [White B0x](https://whiteb0x.com) took up its development,
+security work, disclosures and modernization releases. The
+[March 2026 security audit](docs/audits/2026-03-security-audit.md) counts 21 months without
+security maintenance, from the v1.12.20 release in June 2024 to March 2026. The previous
+repository received no commit between January 2025 and March 2026, and security disclosures
+sent to it privately in 2025 went unanswered.
+
+**The modernization.** In February 2026 White B0x began modernizing the client here for the
+Ethereum Classic DAO: patching the outstanding CVEs, moving to a supported Go toolchain, and
+rebuilding the release pipeline.
+In February and March 2026 it reported that security work privately to the ETC Cooperative,
+which owns the previous repository and is scheduled to dissolve by the end of 2026. A live
+attack on Ethereum Classic bootnodes in March 2026 then confirmed the exposure. The work
+White B0x had reported was cut into the emergency v1.12.21 and v1.12.22 releases in the
+previous repository, and those releases gave v1.12.x operators immediate relief while v1.13
+was tested, from February to September 2026.
+
+White B0x submitted its fixes here as 27 individually scoped pull requests,
+[#10](https://github.com/ethereumclassic/core-geth/pull/10) through
+[#36](https://github.com/ethereumclassic/core-geth/pull/36), and the
+[March 2026 security audit](docs/audits/2026-03-security-audit.md) records the attack and both
+responses. This repository is the canonical home of Core-Geth from here on, and the v1.13 line
+is the first released from it.
+
+**What comes next.** v1.13 is the last Core-Geth release line, maintained through the
+transition. Core-Geth is scheduled to sunset gradually in favor of two efforts. Ethereum Classic
+network extensions, overlays or plugins for Ethereum clients are in development, pending
+release, and none is offered here as an option. [Fukuii](https://fukuii.org), a client native
+to Ethereum Classic, removes upstream, third-party client dependencies from Ethereum Classic's
+core software; moving to it starts with its first release, and the migration guide's
+[Fukuii section](docs/tutorials/v1.13.0-migration.md#migrating-to-fukuii) says when. Fukuii is
+inspired by the work of earlier Ethereum Classic development teams: ETCDEV's
+[Classic Geth](https://github.com/ethereumproject/go-ethereum) and Orbita vision, and
+[IOHK](https://iohk.io/)'s [Mantis](https://web.archive.org/web/20211026113958/https://mantisclient.io/).
+
+**Supporting the work.** The public-goods work on Core-Geth since maintenance moved to the
+community repository has been unfunded, and donations and retroactive grants are
+appreciated. Contact White B0x through the form at <https://whiteb0x.com> or at
+<contact@whiteb0x.com>, or donate on any EVM chain.
+
+**Retroactive Core-Geth Development Donation Address:**
+
+```
+0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
+```
