@@ -20,9 +20,28 @@ nav:
   - Home: index.md
   - Getting started:
       - Installation: getting-started/installation.md
+      - Hardware requirements: getting-started/hardware-requirements.md
+      - Run an Ethereum Classic node: getting-started/run-classic-node.md
+      - Run a Mordor node: getting-started/run-mordor-node.md
       - Command line: getting-started/run-cli.md
   - Upgrading to v1.13.0: tutorials/v1.13.0-migration.md
+  - Operate:
+      - Sync modes and data retention: operate/sync-modes.md
+      - Security and network exposure: operate/security.md
+      - MESS: operate/mess.md
+      - Maintenance, backup and upgrades: operate/maintenance.md
+      - Troubleshooting: operate/troubleshooting.md
+      - Monitoring: operate/monitoring.md
   - Guides:
+      - Choose your role: guides/index.md
+      - Production operations: guides/production-operations.md
+      - Public RPC endpoint: guides/public-rpc-endpoint.md
+      - Archive node: guides/archive-node.md
+      - Mining: guides/mining.md
+      - Mining pool node: guides/mining-pool-node.md
+      - Mine on Mordor: guides/mordor-mining.md
+      - Bootnodes and peer discovery: guides/bootnodes-and-discovery.md
+      - MESS confirmation calculator: guides/mess-calculator.md
       - Private network: tutorials/private-network.md
       - Add a network: developers/add-network.md
   - Build and develop:
@@ -60,7 +79,7 @@ nav:
 theme:
   # https://github.com/squidfunk/mkdocs-material/tree/master/src
   name: material
-  logo: img/favicon.png
+  logo: img/logo.svg
   favicon: img/favicon.png
   language: en
 
@@ -86,6 +105,8 @@ theme:
 
 extra_css:
   - assets/css/extra.css
+extra_javascript:
+  - assets/js/mess-calculator.js
 
 use_directory_urls: true
 
