@@ -112,6 +112,9 @@ func LocalEnv() Environment {
 		if commit := commitRe.FindString(head); commit != "" && env.Commit == "" {
 			env.Commit = commit
 		}
+		// A CI checkout of a release tag is detached, and without the date there the release
+		// binaries report no commit date.
+		env.Date = getDate(env.Commit)
 		return env
 	}
 	if env.Commit == "" {
