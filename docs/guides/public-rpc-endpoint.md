@@ -44,7 +44,7 @@ A method from any other namespace is refused:
 ```
 
 [Using JSON-RPC APIs](../JSON-RPC-API/index.md) lists what each interface serves when `--http.api`
-or `--ws.api` is left out, and what an empty list serves. `--ws.api` takes the same names as
+or `--ws.api` is left out, and why an empty list is refused. `--ws.api` takes the same names as
 `--http.api`.
 
 | Namespace | What it holds | Serve it to others |

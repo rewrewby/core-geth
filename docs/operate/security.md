@@ -117,7 +117,7 @@ reach. Before you widen one:
 - [4. Re-check RPC exposure](../tutorials/v1.13.0-migration.md#4-re-check-rpc-exposure) lists what
   to check in `--http.addr`, `--http.api`, `--http.corsdomain`, `--ws.addr` and `--ws.api`.
 - [Using JSON-RPC APIs](../JSON-RPC-API/index.md) says which namespaces each interface serves,
-  including what an empty `--http.api` serves.
+  including why an empty `--http.api` is refused.
 - [Public RPC endpoint](../guides/public-rpc-endpoint.md) covers which namespaces to serve to other
   machines, and what a proxy in front must supply.
 

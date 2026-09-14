@@ -19,9 +19,10 @@ The IPC interface is enabled by default. On Ethereum Classic and Mordor it serve
 adds the deprecated `personal` namespace only with `--rpc.enabledeprecatedpersonal`. The HTTP
 and WS interfaces need to manually be enabled, and due to security reasons they serve only the
 namespaces named in `--http.api` and `--ws.api`, plus `rpc`.
-An empty list is not an empty set: `--http.api ""` or `--ws.api ""`, or an empty `HTTPModules`
-or `WSModules` in a configuration file, serves every namespace except `engine`; `admin`, `debug`
-and `personal` are among them.
+An empty list is not an empty set. `--http.api ""` and `--ws.api ""` stop the node at startup,
+because an empty list would serve every namespace except `engine`, `admin`, `debug` and
+`personal` among them. An empty `HTTPModules` or `WSModules` in a configuration file still does
+serve them, so name the namespaces there too.
 **`--rpc.enabledeprecatedpersonal` does not gate HTTP or WS:** naming `personal` in
 `--http.api` or `--ws.api` serves it there whether or not the flag is set.
 

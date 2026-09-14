@@ -1372,6 +1372,10 @@ func setHTTP(ctx *cli.Context, cfg *node.Config) {
 
 	if ctx.IsSet(HTTPApiFlag.Name) {
 		cfg.HTTPModules = SplitAndTrim(ctx.String(HTTPApiFlag.Name))
+		// An empty module list registers every namespace, admin and debug included.
+		if len(cfg.HTTPModules) == 0 {
+			Fatalf("--%s is empty, which would serve every namespace: name the namespaces to serve, for example eth,net,web3", HTTPApiFlag.Name)
+		}
 	}
 
 	if ctx.IsSet(HTTPVirtualHostsFlag.Name) {
@@ -1426,6 +1430,10 @@ func setWS(ctx *cli.Context, cfg *node.Config) {
 
 	if ctx.IsSet(WSApiFlag.Name) {
 		cfg.WSModules = SplitAndTrim(ctx.String(WSApiFlag.Name))
+		// An empty module list registers every namespace, admin and debug included.
+		if len(cfg.WSModules) == 0 {
+			Fatalf("--%s is empty, which would serve every namespace: name the namespaces to serve, for example eth,net,web3", WSApiFlag.Name)
+		}
 	}
 
 	if ctx.IsSet(WSPathPrefixFlag.Name) {
