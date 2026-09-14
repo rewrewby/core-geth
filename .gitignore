@@ -117,3 +117,6 @@ SCRATCH.md
 *.swp
 *.swo
 Thumbs.db
+
+# Windows resource objects that build/ci.go writes into cmd/ for a Windows build only
+/cmd/*/*.syso

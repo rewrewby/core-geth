@@ -242,13 +242,55 @@ func doInstall(cmdline []string) {
 		packages = build.FindMainPackages("./cmd")
 	}
 
+	// Windows executables carry version information and a manifest, which Windows shows in the file's
+	// properties and in Task Manager. The linker takes them from a resource object in the package
+	// directory, written for this build only. The toolchain builds for the host OS, and for -arch
+	// when it is given.
+	goarch := tc.GOARCH
+	if goarch == "" {
+		goarch = runtime.GOARCH
+	}
+	windowsResources := runtime.GOOS == "windows" && goarch == "amd64"
+
 	// Do the build!
 	for _, pkg := range packages {
+		if info, err := os.Stat(pkg); windowsResources && err == nil && info.IsDir() {
+			syso := filepath.Join(pkg, "zz_resources_windows_amd64.syso")
+			if err := build.WriteWindowsResourceObject(syso, executableWindowsResources(path.Base(pkg))); err != nil {
+				log.Fatal(err)
+			}
+			defer os.Remove(syso)
+		}
 		args := make([]string, len(gobuild.Args))
 		copy(args, gobuild.Args)
 		args = append(args, "-o", executablePath(path.Base(pkg)))
 		args = append(args, pkg)
 		build.MustRun(&exec.Cmd{Path: gobuild.Path, Args: args, Env: gobuild.Env})
+	}
+}
+
+// executableWindowsResources is the version information of the Windows executable built from cmd/<name>.
+func executableWindowsResources(name string) build.WindowsResources {
+	description := "Core-Geth " + name
+	if name == "geth" {
+		description = "Core-Geth: the Ethereum Classic execution client"
+	}
+	return build.WindowsResources{
+		Name:       "EthereumClassicDAO.CoreGeth." + name,
+		Major:      params.VersionMajor,
+		Minor:      params.VersionMinor,
+		Patch:      params.VersionPatch,
+		Prerelease: params.VersionMeta != "stable",
+		Strings: [][2]string{
+			{"CompanyName", "Ethereum Classic DAO LLC"},
+			{"FileDescription", description},
+			{"FileVersion", params.VersionWithMeta},
+			{"InternalName", name},
+			{"LegalCopyright", "Copyright © The go-ethereum Authors, The multi-geth Authors and The core-geth Authors"},
+			{"OriginalFilename", name + ".exe"},
+			{"ProductName", "Core-Geth"},
+			{"ProductVersion", params.VersionWithMeta},
+		},
 	}
 }
 
