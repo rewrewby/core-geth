@@ -104,3 +104,30 @@ paragraph above. No single one of them answers "what differs".
 
 The first three describe the source. **The last one describes the files you download**,
 and the two can disagree: a release is not what the build configuration says it builds.
+
+## Security reporting
+
+Report a security issue privately, never in a public issue: through this repository's
+[private advisories](https://github.com/ethereumclassic/core-geth/security/advisories), or by
+email to <security@ethereumclassic.com>. To follow security updates and releases, track the
+[`ethereumclassic/core-geth` release line](https://github.com/ethereumclassic/core-geth/releases).
+[`SECURITY.md`](https://github.com/ethereumclassic/core-geth/blob/main/SECURITY.md) has the
+disclosure policy and the details of each channel.
+
+With the ETC Cooperative's dissolution, Ethereum Classic stakeholders such as mining pools,
+exchanges and service providers should use <security@ethereumclassic.com> as their point of
+contact. A person answers it: one of the core developers who maintain this repository and have
+been with the network since its inception.
+
+## Support this work
+
+The public-goods work on Core-Geth since maintenance moved to the community repository has been
+unfunded, and donations and retroactive grants are appreciated. Contact
+[White B0x](https://whiteb0x.com) through the form at <https://whiteb0x.com> or at
+<contact@whiteb0x.com>, or donate on any EVM chain.
+
+**Retroactive Core-Geth Development Donation Address:**
+
+```text
+0x86FE8d331A4B984B57d3e92C6F4cb9C881eC9B04
+```
