@@ -24,7 +24,12 @@ nav:
       - Run an Ethereum Classic node: getting-started/run-classic-node.md
       - Run a Mordor node: getting-started/run-mordor-node.md
       - Command line: getting-started/run-cli.md
-  - Upgrading to v1.13.0: tutorials/v1.13.0-migration.md
+  - Upgrading to v1.13.0:
+      - Overview: tutorials/v1.13.0-migration.md
+      - Linux users guide: tutorials/migration/linux.md
+      - Mac users guide: tutorials/migration/macos.md
+      - Windows users guide: tutorials/migration/windows.md
+      - Docker users guide: tutorials/migration/docker.md
   - Operate:
       - Sync modes and data retention: operate/sync-modes.md
       - Security and network exposure: operate/security.md

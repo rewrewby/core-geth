@@ -114,7 +114,7 @@ reach. Before you widen one:
 
 - [Docker](../getting-started/installation.md#docker) shows how publishing a container's RPC port
   can expose it on every interface of the host.
-- [4. Re-check RPC exposure](../tutorials/v1.13.0-migration.md#4-re-check-rpc-exposure) lists what
+- [4. Re-check RPC exposure](../tutorials/v1.13.0-migration.md#re-check-rpc-exposure) lists what
   to check in `--http.addr`, `--http.api`, `--http.corsdomain`, `--ws.addr` and `--ws.api`.
 - [Using JSON-RPC APIs](../JSON-RPC-API/index.md) says which namespaces each interface serves,
   including why an empty `--http.api` is refused.
@@ -133,7 +133,7 @@ A copy of a data directory carries its `nodekey`, so two hosts started from copi
 directory have the same enode ID. `--nodekey` loads the key from another file instead.
 
 A node upgraded from a v1.12.x release needs a new key:
-[3. Rotate the P2P node key](../tutorials/v1.13.0-migration.md#3-rotate-the-p2p-node-key) explains why
+[3. Rotate the P2P node key](../tutorials/v1.13.0-migration.md#rotate-the-p2p-node-key) explains why
 and how.
 
 ### Account keys

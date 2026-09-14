@@ -247,7 +247,7 @@ neither node logs the failed connection at the default verbosity.
     ```
 
 - **Fix:** give the new enode to every node that lists this one, in `StaticNodes` or `TrustedNodes`.
-  [3. Rotate the P2P node key](../tutorials/v1.13.0-migration.md#3-rotate-the-p2p-node-key) lists the
+  [3. Rotate the P2P node key](../tutorials/v1.13.0-migration.md#rotate-the-p2p-node-key) lists the
   other places that name a node by its enode.
 - **Once fixed:** on the other node, `admin.peers` includes the new enode:
 

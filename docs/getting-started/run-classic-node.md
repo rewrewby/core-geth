@@ -188,7 +188,7 @@ A new node is synced when all four of these hold.
     ```
 
 After an upgrade from v1.12.x, use the checks in
-[5. Start, and verify](../tutorials/v1.13.0-migration.md#5-start-and-verify) instead.
+[5. Start, and verify](../tutorials/migration/linux.md#5-start-and-verify) instead.
 
 ## Run it as a service
 
