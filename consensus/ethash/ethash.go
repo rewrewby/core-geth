@@ -150,6 +150,9 @@ func memoryMapFile(file *os.File, write bool) (mmap.MMap, []uint32, error) {
 // memoryMapAndGenerate tries to memory map a temporary file of uint32s for write
 // access, fill it with the data from a generator and then move it into the final
 // path requested.
+// renameFile is os.Rename, replaceable in tests.
+var renameFile = os.Rename
+
 func memoryMapAndGenerate(path string, size uint64, lock bool, generator func(buffer []uint32)) (*os.File, mmap.MMap, []uint32, error) {
 	// Ensure the data folder exists
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -185,7 +188,13 @@ func memoryMapAndGenerate(path string, size uint64, lock bool, generator func(bu
 	if err := dump.Close(); err != nil {
 		return nil, nil, nil, err
 	}
-	if err := os.Rename(temp, path); err != nil {
+	if err := renameFile(temp, path); err != nil {
+		os.Remove(temp)
+		// Another generator of the same epoch can finish first. Windows refuses to replace a file that
+		// generator still has mapped, so map the finished file, which holds the same data.
+		if _, statErr := os.Stat(path); statErr == nil {
+			return memoryMap(path, lock)
+		}
 		return nil, nil, nil, err
 	}
 	return memoryMap(path, lock)
@@ -363,7 +372,9 @@ func (c *cache) generate(dir string, limit int, lock bool, test bool) {
 				if err := os.Remove(file); err == nil {
 					logger.Debug("Deleted ethash cache file", "target.epoch", e, "file", file)
 				} else {
-					logger.Error("Failed to delete ethash cache file", "target.epoch", e, "file", file, "err", err)
+					// Windows refuses to delete a file this node still has mapped. A later cleanup
+					// removes it once it is no longer in use.
+					logger.Debug("Failed to delete ethash cache file", "target.epoch", e, "file", file, "err", err)
 				}
 			}
 		}
@@ -476,7 +487,9 @@ func (d *dataset) generate(dir string, limit int, lock bool, test bool) {
 				if err := os.Remove(file); err == nil {
 					logger.Debug("Deleted ethash full file", "target.epoch", e, "file", file)
 				} else {
-					logger.Error("Failed to delete ethash full file", "target.epoch", e, "file", file, "err", err)
+					// Windows refuses to delete a file this node still has mapped. A later cleanup
+					// removes it once it is no longer in use.
+					logger.Debug("Failed to delete ethash full file", "target.epoch", e, "file", file, "err", err)
 				}
 			}
 		}

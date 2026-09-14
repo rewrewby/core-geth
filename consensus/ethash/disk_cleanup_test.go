@@ -17,9 +17,11 @@
 package ethash
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -64,5 +66,48 @@ func TestDiskCleanupKeepsCurrentEpoch(t *testing.T) {
 				t.Errorf("%s epoch %d: file for epoch %d not removed", kind.prefix, epoch, epoch-limit)
 			}
 		}
+	}
+}
+
+// Two generators of one epoch can race, and Windows refuses the second's rename over the file the first
+// still has mapped. The second must map the finished file instead of failing, leaving no temporary file.
+func TestMemoryMapAndGenerateMapsFinishedFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "cache-R23-0-0000000000000000")
+	generator := func(buffer []uint32) {
+		for i := range buffer {
+			buffer[i] = uint32(i)
+		}
+	}
+	dump, mem, first, err := memoryMapAndGenerate(path, 64, false, generator)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dump.Close()
+	defer mem.Unmap()
+
+	renameFile = func(string, string) error { return errors.New("access is denied") }
+	defer func() { renameFile = os.Rename }()
+
+	dump2, mem2, second, err := memoryMapAndGenerate(path, 64, false, generator)
+	if err != nil {
+		t.Fatalf("second generator of the same file: %v", err)
+	}
+	defer dump2.Close()
+	defer mem2.Unmap()
+	if !slices.Equal(first, second) {
+		t.Error("the mapped data differs from the first generator's")
+	}
+	if temps, _ := filepath.Glob(path + ".*"); len(temps) != 0 {
+		t.Errorf("temporary files left: %v", temps)
+	}
+
+	// With no finished file to map, the rename error is returned, still leaving no temporary file.
+	other := filepath.Join(dir, "cache-R23-1-0000000000000000")
+	if _, _, _, err := memoryMapAndGenerate(other, 64, false, generator); err == nil {
+		t.Error("a rename failure with no finished file returned no error")
+	}
+	if temps, _ := filepath.Glob(other + ".*"); len(temps) != 0 {
+		t.Errorf("temporary files left: %v", temps)
 	}
 }
