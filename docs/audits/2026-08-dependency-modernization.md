@@ -69,8 +69,9 @@ changed, 17 removed, 16 added.** The manifest went from 176 modules (83 direct,
 number worth noting: this was a currency and security pass, not a change in what
 the client depends on.
 
-Seven of the 16 are not new code at all but upstream import-path renames, each
-pairing with an entry in the removed list:
+Seven of the 16 are not new code at all but import-path renames, each pairing with an entry in the
+removed list. Each successor is the choice of the library that requires the module; core-geth imports
+none of them itself:
 
 | Removed | Successor |
 |---|---|
@@ -81,6 +82,12 @@ pairing with an entry in the removed list:
 | `go-latex/latex` | `codeberg.org/go-latex/latex` |
 | `go-pdf/fpdf` | `codeberg.org/go-pdf/fpdf` |
 | `rivo/uniseg` | `clipperhouse/displaywidth`, `clipperhouse/uax29/v2` |
+
+`yusufpapurcu/wmi` is a personal-account fork of `StackExchange/wmi`, which is archived; `shirou/gopsutil`
+requires the fork, and it is compiled into Windows builds only. v1.13.0 does not fetch it from that
+account: a `replace` directive builds it from `fukuii-project/archive-reference-material` at the same
+commit, and the two `etclabscore` OpenRPC modules, `go-openrpc-reflect` and `go-jsonschema-walk`, are
+built from the same archive the same way. The archived source is identical to each pinned version.
 
 The remaining nine arrived transitively behind modules that were updated:
 `apapsch/go-jsonmerge/v2`, `cockroachdb/fifo`, `emicklei/dot`, `olekukonko/cat`,
