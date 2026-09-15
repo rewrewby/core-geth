@@ -20,25 +20,25 @@ jobs:
         - os: macos-latest
           BUILD_OS_NAME: osx
 
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           BUILD_OS_NAME: linux
 
-        - os: ubuntu-20.04
+        - os: ubuntu-22.04
           BUILD_OS_NAME: arm
 
-        - os: windows-latest
+        - os: windows-2022
           BUILD_OS_NAME: win64
 
     steps:
       - name: Checkout etclabscore/core-geth
         uses: actions/checkout@v3
 
-      - name: Set up Go 1.19
+      - name: Set up Go 1.x
         if: ${{ matrix.BUILD_OS_NAME != 'arm' }}
         id: go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: ^1.19
+          go-version: '1.21'
 
       - name: Cache lookup (Linux/ARM)
         uses: actions/cache@v3

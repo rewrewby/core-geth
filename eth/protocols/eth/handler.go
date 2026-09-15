@@ -17,18 +17,21 @@
 package eth
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/txpool"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 	"github.com/ethereum/go-ethereum/params/types/ctypes"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 const (
@@ -43,10 +46,6 @@ const (
 	// is mostly there to limit the number of disk lookups. With 24KB block sizes
 	// nowadays, the practical limit will always be softResponseLimit.
 	maxBodiesServe = 1024
-
-	// maxNodeDataServe is the maximum number of state trie nodes to serve. This
-	// number is there to limit the number of disk lookups.
-	maxNodeDataServe = 1024
 
 	// maxReceiptsServe is the maximum number of block receipts to serve. This
 	// number is mostly there to limit the number of disk lookups. With block
@@ -90,16 +89,23 @@ type Backend interface {
 // TxPool defines the methods needed by the protocol handler to serve transactions.
 type TxPool interface {
 	// Get retrieves the transaction from the local txpool with the given hash.
-	Get(hash common.Hash) *txpool.Transaction
+	Get(hash common.Hash) *types.Transaction
 }
 
 // MakeProtocols constructs the P2P protocol definitions for `eth`.
 func MakeProtocols(backend Backend, network uint64, protocolVersions []uint, dnsdisc enode.Iterator) []p2p.Protocol {
-	protocols := make([]p2p.Protocol, len(protocolVersions))
-	for i, version := range protocolVersions {
+	protocols := make([]p2p.Protocol, 0, len(protocolVersions))
+	for _, version := range protocolVersions {
 		version := version // Closure
 
-		protocols[i] = p2p.Protocol{
+		// TODO(meowsbits): FIXME re: Cancun config/time/enabled check
+		// Blob transactions require eth/68 announcements, disable everything else
+		eip4844Enabled := backend.Chain().Config().GetEIP4844TransitionTime() != nil || backend.Chain().Config().GetEIP4844Transition() != nil
+		if version <= ETH67 && eip4844Enabled {
+			continue
+		}
+
+		protocols = append(protocols, p2p.Protocol{
 			Name:    ProtocolName,
 			Version: version,
 			Length:  protocolLengths[version],
@@ -119,7 +125,7 @@ func MakeProtocols(backend Backend, network uint64, protocolVersions []uint, dns
 			},
 			Attributes:     []enr.Entry{currentENREntry(backend.Chain())},
 			DialCandidates: dnsdisc,
-		}
+		})
 	}
 	return protocols
 }
@@ -127,7 +133,7 @@ func MakeProtocols(backend Backend, network uint64, protocolVersions []uint, dns
 // NodeInfo represents a short summary of the `eth` sub-protocol metadata
 // known about the host peer.
 type NodeInfo struct {
-	Network    uint64                   `json:"network"`    // Ethereum network ID (1=Mainnet, Goerli=5)
+	Network    uint64                   `json:"network"`    // Ethereum network ID (1=Mainnet)
 	Difficulty *big.Int                 `json:"difficulty"` // Total difficulty of the host's blockchain
 	Genesis    common.Hash              `json:"genesis"`    // SHA3 hash of the host's genesis block
 	Config     ctypes.ChainConfigurator `json:"config"`     // Chain configuration for the fork rules
@@ -166,51 +172,72 @@ type Decoder interface {
 	Time() time.Time
 }
 
-var eth66 = map[uint64]msgHandler{
-	NewBlockHashesMsg:             handleNewBlockhashes,
-	NewBlockMsg:                   handleNewBlock,
-	TransactionsMsg:               handleTransactions,
-	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes66,
-	GetBlockHeadersMsg:            handleGetBlockHeaders66,
-	BlockHeadersMsg:               handleBlockHeaders66,
-	GetBlockBodiesMsg:             handleGetBlockBodies66,
-	BlockBodiesMsg:                handleBlockBodies66,
-	GetNodeDataMsg:                handleGetNodeData66,
-	NodeDataMsg:                   handleNodeData66,
-	GetReceiptsMsg:                handleGetReceipts66,
-	ReceiptsMsg:                   handleReceipts66,
-	GetPooledTransactionsMsg:      handleGetPooledTransactions66,
-	PooledTransactionsMsg:         handlePooledTransactions66,
-}
-
-var eth67 = map[uint64]msgHandler{
-	NewBlockHashesMsg:             handleNewBlockhashes,
-	NewBlockMsg:                   handleNewBlock,
-	TransactionsMsg:               handleTransactions,
-	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes66,
-	GetBlockHeadersMsg:            handleGetBlockHeaders66,
-	BlockHeadersMsg:               handleBlockHeaders66,
-	GetBlockBodiesMsg:             handleGetBlockBodies66,
-	BlockBodiesMsg:                handleBlockBodies66,
-	GetReceiptsMsg:                handleGetReceipts66,
-	ReceiptsMsg:                   handleReceipts66,
-	GetPooledTransactionsMsg:      handleGetPooledTransactions66,
-	PooledTransactionsMsg:         handlePooledTransactions66,
-}
-
 var eth68 = map[uint64]msgHandler{
 	NewBlockHashesMsg:             handleNewBlockhashes,
 	NewBlockMsg:                   handleNewBlock,
 	TransactionsMsg:               handleTransactions,
-	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes68,
-	GetBlockHeadersMsg:            handleGetBlockHeaders66,
-	BlockHeadersMsg:               handleBlockHeaders66,
-	GetBlockBodiesMsg:             handleGetBlockBodies66,
-	BlockBodiesMsg:                handleBlockBodies66,
-	GetReceiptsMsg:                handleGetReceipts66,
-	ReceiptsMsg:                   handleReceipts66,
-	GetPooledTransactionsMsg:      handleGetPooledTransactions66,
-	PooledTransactionsMsg:         handlePooledTransactions66,
+	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes,
+	GetBlockHeadersMsg:            handleGetBlockHeaders,
+	BlockHeadersMsg:               handleBlockHeaders,
+	GetBlockBodiesMsg:             handleGetBlockBodies,
+	BlockBodiesMsg:                handleBlockBodies,
+	GetReceiptsMsg:                handleGetReceipts,
+	ReceiptsMsg:                   handleReceipts,
+	GetPooledTransactionsMsg:      handleGetPooledTransactions,
+	PooledTransactionsMsg:         handlePooledTransactions,
+}
+
+// responseItemLimits defines the maximum number of items allowed in response
+// messages. This prevents memory amplification attacks (CVE-2026-26313) where
+// compact RLP-encoded items expand into large in-memory objects during decoding.
+type responseLimit struct {
+	maxItems int
+	wrapped  bool // true if the packet has a RequestId wrapper
+}
+
+var responseItemLimits = map[uint64]responseLimit{
+	BlockHeadersMsg:       {maxItems: maxHeadersServe, wrapped: true},
+	BlockBodiesMsg:        {maxItems: maxBodiesServe, wrapped: true},
+	ReceiptsMsg:           {maxItems: maxReceiptsServe, wrapped: true},
+	PooledTransactionsMsg: {maxItems: maxHeadersServe * 4, wrapped: true},
+}
+
+// checkResponseItems reads the message payload into a buffer, counts the number
+// of RLP items in the response list, and rejects messages that exceed maxItems.
+// The msg.Payload is replaced with a bytes.Reader so subsequent Decode calls work.
+func checkResponseItems(msg *p2p.Msg, limit responseLimit) error {
+	buf := make([]byte, msg.Size)
+	if _, err := io.ReadFull(msg.Payload, buf); err != nil {
+		return err
+	}
+	msg.Payload = bytes.NewReader(buf)
+
+	content, _, err := rlp.SplitList(buf)
+	if err != nil {
+		return err
+	}
+	var itemsContent []byte
+	if limit.wrapped {
+		// Skip RequestId (first element of the outer list)
+		_, _, rest, err := rlp.Split(content)
+		if err != nil {
+			return err
+		}
+		itemsContent, _, err = rlp.SplitList(rest)
+		if err != nil {
+			return err
+		}
+	} else {
+		itemsContent = content
+	}
+	count, err := rlp.CountValues(itemsContent)
+	if err != nil {
+		return err
+	}
+	if count > limit.maxItems {
+		return fmt.Errorf("%w: too many items in response: %d > %d", errDecode, count, limit.maxItems)
+	}
+	return nil
 }
 
 // handleMessage is invoked whenever an inbound message is received from a remote
@@ -221,18 +248,19 @@ func handleMessage(backend Backend, peer *Peer) error {
 	if err != nil {
 		return err
 	}
+	defer msg.Discard()
 	if msg.Size > maxMessageSize {
 		return fmt.Errorf("%w: %v > %v", errMsgTooLarge, msg.Size, maxMessageSize)
 	}
-	defer msg.Discard()
 
-	var handlers = eth66
-	if peer.Version() == ETH67 {
-		handlers = eth67
+	// Pre-decode item count validation to prevent memory amplification attacks.
+	if limit, ok := responseItemLimits[msg.Code]; ok {
+		if err := checkResponseItems(&msg, limit); err != nil {
+			return err
+		}
 	}
-	if peer.Version() >= ETH68 {
-		handlers = eth68
-	}
+
+	var handlers = eth68
 
 	// Track the amount of time it takes to serve the request and run the handler
 	if metrics.Enabled {

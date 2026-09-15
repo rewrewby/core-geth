@@ -17,6 +17,7 @@
 package eth
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"time"
@@ -51,7 +52,7 @@ func (h *ethHandler) PeerInfo(id enode.ID) interface{} {
 // AcceptTxs retrieves whether transaction processing is enabled on the node
 // or if inbound transactions should simply be dropped.
 func (h *ethHandler) AcceptTxs() bool {
-	return h.acceptTxs.Load()
+	return h.synced.Load()
 }
 
 // Handle is invoked from a peer's message handler when it receives a new remote
@@ -66,21 +67,54 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	case *eth.NewBlockPacket:
 		return h.handleBlockBroadcast(peer, packet.Block, packet.TD)
 
-	case *eth.NewPooledTransactionHashesPacket66:
-		return h.txFetcher.Notify(peer.ID(), *packet)
-
-	case *eth.NewPooledTransactionHashesPacket68:
-		return h.txFetcher.Notify(peer.ID(), packet.Hashes)
+	case *eth.NewPooledTransactionHashesPacket:
+		return h.txFetcher.Notify(peer.ID(), packet.Types, packet.Sizes, packet.Hashes)
 
 	case *eth.TransactionsPacket:
-		return h.txFetcher.Enqueue(peer.ID(), *packet, false)
+		txs, err := packet.Items()
+		if err != nil {
+			return fmt.Errorf("Transactions: %v", err)
+		}
+		if err := handleTransactions(peer, txs, true); err != nil {
+			return fmt.Errorf("Transactions: %v", err)
+		}
+		return h.txFetcher.Enqueue(peer.ID(), txs, false)
 
 	case *eth.PooledTransactionsPacket:
-		return h.txFetcher.Enqueue(peer.ID(), *packet, true)
+		txs, err := packet.List.Items()
+		if err != nil {
+			return fmt.Errorf("PooledTransactions: %v", err)
+		}
+		if err := handleTransactions(peer, txs, false); err != nil {
+			return fmt.Errorf("PooledTransactions: %v", err)
+		}
+		return h.txFetcher.Enqueue(peer.ID(), txs, true)
 
 	default:
 		return fmt.Errorf("unexpected eth packet type: %T", packet)
 	}
+}
+
+// handleTransactions marks all given transactions as known to the peer
+// and performs basic validations.
+func handleTransactions(peer *eth.Peer, list []*types.Transaction, directBroadcast bool) error {
+	seen := make(map[common.Hash]struct{})
+	for _, tx := range list {
+		if directBroadcast && tx.Type() == types.BlobTxType {
+			return errors.New("disallowed broadcast blob transaction")
+		}
+
+		// Check for duplicates.
+		hash := tx.Hash()
+		if _, exists := seen[hash]; exists {
+			return fmt.Errorf("multiple copies of the same hash %v", hash)
+		}
+		seen[hash] = struct{}{}
+
+		// Mark as known.
+		peer.MarkTransaction(hash)
+	}
+	return nil
 }
 
 // handleBlockAnnounces is invoked from a peer's message handler when it transmits a
@@ -90,9 +124,7 @@ func (h *ethHandler) handleBlockAnnounces(peer *eth.Peer, hashes []common.Hash, 
 	// the chain already entered the pos stage and disconnect the
 	// remote peer.
 	if h.merger.PoSFinalized() {
-		// TODO (MariusVanDerWijden) drop non-updated peers after the merge
-		return nil
-		// return errors.New("unexpected block announces")
+		return errors.New("disallowed block announcement")
 	}
 	// Schedule all the unknown hashes for retrieval
 	var (
@@ -118,9 +150,7 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 	// the chain already entered the pos stage and disconnect the
 	// remote peer.
 	if h.merger.PoSFinalized() {
-		// TODO (MariusVanDerWijden) drop non-updated peers after the merge
-		return nil
-		// return errors.New("unexpected block announces")
+		return errors.New("disallowed block broadcast")
 	}
 	// Schedule the block for import
 	h.blockFetcher.Enqueue(peer.ID(), block)

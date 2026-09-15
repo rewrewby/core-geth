@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/tracker"
 )
 
 var (
@@ -41,15 +42,16 @@ var (
 // Request is a pending request to allow tracking it and delivering a response
 // back to the requester on their chosen channel.
 type Request struct {
-	peer *Peer  // Peer to which this request belogs for untracking
+	peer *Peer  // Peer to which this request belongs for untracking
 	id   uint64 // Request ID to match up replies to
 
 	sink   chan *Response // Channel to deliver the response on
 	cancel chan struct{}  // Channel to cancel requests ahead of time
 
-	code uint64      // Message code of the request packet
-	want uint64      // Message code of the response packet
-	data interface{} // Data content of the request packet
+	code     uint64      // Message code of the request packet
+	want     uint64      // Message code of the response packet
+	numItems int         // Number of requested items
+	data     interface{} // Data content of the request packet
 
 	Peer string    // Demultiplexer if cross-peer requests are batched together
 	Sent time.Time // Timestamp when the request was sent
@@ -136,7 +138,7 @@ func (p *Peer) dispatchRequest(req *Request) error {
 	}
 }
 
-// dispatchRequest fulfils a pending request and delivers it to the requested
+// dispatchResponse fulfils a pending request and delivers it to the requested
 // sink.
 func (p *Peer) dispatchResponse(res *Response, metadata func() interface{}) error {
 	resOp := &response{
@@ -174,6 +176,8 @@ func (p *Peer) dispatchResponse(res *Response, metadata func() interface{}) erro
 				return <-res.Done // Response delivered, return any errors
 			case <-res.Req.cancel:
 				return nil // Request cancelled, silently discard response
+			case <-p.term:
+				return errDisconnected
 			}
 		}
 
@@ -188,19 +192,30 @@ func (p *Peer) dispatchResponse(res *Response, metadata func() interface{}) erro
 func (p *Peer) dispatcher() {
 	pending := make(map[uint64]*Request)
 
+loop:
 	for {
 		select {
 		case reqOp := <-p.reqDispatch:
 			req := reqOp.req
 			req.Sent = time.Now()
 
-			requestTracker.Track(p.id, p.version, req.code, req.want, req.id)
-			err := p2p.Send(p.rw, req.code, req.data)
-			reqOp.fail <- err
-
-			if err == nil {
-				pending[req.id] = req
+			treq := tracker.Request{
+				ID:       req.id,
+				ReqCode:  req.code,
+				RespCode: req.want,
+				Size:     req.numItems,
 			}
+			if err := p.tracker.Track(treq); err != nil {
+				reqOp.fail <- err
+				continue loop
+			}
+			if err := p2p.Send(p.rw, req.code, req.data); err != nil {
+				reqOp.fail <- err
+				continue loop
+			}
+
+			pending[req.id] = req
+			reqOp.fail <- nil
 
 		case cancelOp := <-p.reqCancel:
 			// Retrieve the pending request to cancel and short circuit if it
@@ -218,13 +233,10 @@ func (p *Peer) dispatcher() {
 			res := resOp.res
 			res.Req = pending[res.id]
 
-			// Independent if the request exists or not, track this packet
-			requestTracker.Fulfil(p.id, p.version, res.code, res.id)
-
 			switch {
 			case res.Req == nil:
 				// Response arrived with an untracked ID. Since even cancelled
-				// requests are tracked until fulfilment, a dangling response
+				// requests are tracked until fulfillment, a dangling response
 				// means the remote peer implements the protocol badly.
 				resOp.fail <- errDanglingResponse
 
@@ -247,6 +259,7 @@ func (p *Peer) dispatcher() {
 			}
 
 		case <-p.term:
+			p.tracker.Stop()
 			return
 		}
 	}
